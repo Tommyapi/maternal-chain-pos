@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>萌贝 · 管理后台</title>
+<link rel="icon" href="static/favicon.png">
+<style>
+:root{--pri:#e5484d;--pri-d:#c93a3f;--pri-l:#fff1f1;--ink:#1f2633;--ink2:#4b5565;--mut:#8a94a6;--line:#e6e9ef;--bg:#f3f5f8;--card:#fff;--ok:#16a34a;--warn:#d97706;--blue:#2563eb;--r:10px;--side:#1f2633}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Microsoft YaHei","PingFang SC",-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink);font-size:14px;-webkit-font-smoothing:antialiased}
+button{font-family:inherit;cursor:pointer;border:0;background:none;color:inherit}
+input,select,textarea{font-family:inherit;font-size:14px;color:var(--ink)}
+a{color:var(--blue);text-decoration:none}
+.hidden{display:none!important}
+.num{font-variant-numeric:tabular-nums}
+.r{text-align:right}
+/* 布局 */
+#app{display:flex;min-height:100vh}
+.side{width:208px;background:var(--side);color:#c9d1de;flex-shrink:0;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow:auto}
+.side .brand{display:flex;align-items:center;gap:10px;padding:16px 18px;color:#fff;font-weight:700;font-size:16px}
+.logo{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#ff7a6e,#e53935);display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff}
+.side nav a{display:flex;align-items:center;gap:10px;padding:11px 20px;color:#c9d1de;cursor:pointer;border-left:3px solid transparent;font-size:14px}
+.side nav a:hover{background:#2a3345;color:#fff}
+.side nav a.on{background:#2c3546;color:#fff;border-left-color:var(--pri);font-weight:600}
+.side nav .grp{padding:14px 20px 4px;font-size:12px;color:#6c7a93}
+.side .foot{margin-top:auto;padding:14px 18px;font-size:12px;color:#7d8aa3}
+.side .foot a{color:#9fb4e8;display:block;margin-top:6px}
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.topbar{height:54px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:14px;padding:0 24px;position:sticky;top:0;z-index:20}
+.topbar h2{font-size:17px}
+.topbar .sp{flex:1}
+.topbar .who{color:var(--ink2);font-size:13px}
+.content{padding:20px 24px 40px}
+.menu-btn{display:none;font-size:22px;padding:0 6px}
+/* 组件 */
+.card{background:var(--card);border-radius:var(--r);box-shadow:0 1px 3px rgba(31,38,51,.06);padding:16px 18px;margin-bottom:16px}
+.card h3{font-size:15px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center}
+.card h3 small{color:var(--mut);font-weight:400;font-size:12px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:4px;height:34px;padding:0 14px;border-radius:7px;font-size:13px;border:1px solid var(--line);background:#fff;color:var(--ink);white-space:nowrap}
+.btn:hover{border-color:#cbd2de;background:#fafbfc}
+.btn.pri{background:var(--pri);border-color:var(--pri);color:#fff}
+.btn.pri:hover{background:var(--pri-d)}
+.btn.sm{height:28px;padding:0 10px;font-size:12px}
+.btn.red{color:var(--pri);border-color:#f5c2c4}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px}
+.bar input,.bar select{height:34px;border:1px solid var(--line);border-radius:7px;padding:0 10px;background:#fff;min-width:0}
+.bar input[type=text],.bar input:not([type]){width:200px}
+.bar .sp{flex:1}
+.fi{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
+.fi label{font-size:12px;color:var(--ink2)}
+.fi input,.fi select,.fi textarea{height:36px;border:1px solid var(--line);border-radius:7px;padding:0 10px;width:100%;background:#fff}
+.fi textarea{height:auto;padding:8px 10px;line-height:1.5;resize:vertical}
+.fi .hint{font-size:12px;color:var(--mut)}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}
+.tbl-wrap{overflow-x:auto}
+table.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{background:#f7f8fa;color:var(--ink2);font-weight:600;text-align:left;padding:10px 12px;white-space:nowrap;border-bottom:1px solid var(--line)}
+.tbl td{padding:9px 12px;border-bottom:1px solid #f0f2f5;vertical-align:middle}
+.tbl tr:hover td{background:#fafbfc}
+.tbl tr.click{cursor:pointer}
+.tbl th.r,.tbl td.r{text-align:right}
+.tag{display:inline-block;padding:2px 8px;border-radius:10px;font-size:12px;background:#eef1f6;color:var(--ink2);white-space:nowrap}
+.tag.green{background:#e7f6ec;color:#15803d}.tag.red{background:#fdecec;color:#c93a3f}.tag.orange{background:#fff3e0;color:#b45309}.tag.blue{background:#e8f0fe;color:#1d4ed8}
+.pager{display:flex;justify-content:space-between;align-items:center;margin-top:12px;color:var(--ink2);font-size:13px;flex-wrap:wrap;gap:8px}
+.pager .btns{display:flex;gap:6px}
+.empty{text-align:center;color:var(--mut);padding:30px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-bottom:16px}
+.kpi{background:#fff;border-radius:var(--r);padding:16px 18px;box-shadow:0 1px 3px rgba(31,38,51,.06)}
+.kpi span{color:var(--mut);font-size:12px}
+.kpi b{display:block;font-size:26px;margin:6px 0 4px;font-weight:700}
+.kpi em{font-style:normal;font-size:12px;color:var(--mut)}
+.kpi em.up{color:var(--ok)}.kpi em.down{color:var(--pri)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.bars{display:flex;align-items:flex-end;gap:4px;height:130px}
+.bars div{flex:1;background:#f7c9cb;border-radius:3px 3px 0 0;min-height:2px}
+.bars div.on{background:var(--pri)}
+.bx{display:flex;justify-content:space-between;color:var(--mut);font-size:11px;margin-top:4px}
+.alert{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:13px}
+.pbar{height:6px;background:#f0f2f5;border-radius:3px;margin-top:5px}
+.pbar i{display:block;height:100%;background:var(--pri);border-radius:3px}
+/* 弹窗 */
+.mask{position:fixed;inset:0;background:rgba(20,26,38,.5);z-index:100;display:flex;align-items:center;justify-content:center;padding:16px}
+.modal{background:#fff;border-radius:12px;width:520px;max-width:100%;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 20px 50px rgba(0,0,0,.25)}
+.modal.wide{width:760px}.modal.xl{width:980px}
+.modal .mh{display:flex;justify-content:space-between;align-items:center;padding:14px 20px;border-bottom:1px solid var(--line)}
+.modal .mh h3{font-size:16px}
+.modal .mh .x{font-size:22px;color:var(--mut);line-height:1}
+.modal .mb{padding:18px 20px;overflow:auto}
+.modal .mf{display:flex;justify-content:flex-end;gap:10px;padding:12px 20px;border-top:1px solid var(--line)}
+.err{color:var(--pri);font-size:13px;min-height:18px;margin-top:4px}
+.toast{position:fixed;left:50%;top:70px;transform:translateX(-50%);background:#1f2633;color:#fff;padding:10px 20px;border-radius:8px;z-index:200;opacity:0;pointer-events:none;transition:opacity .2s;max-width:80vw}
+.toast.show{opacity:1}.toast.ok{background:var(--ok)}.toast.err{background:var(--pri)}
+#login{position:fixed;inset:0;background:linear-gradient(135deg,#1f2633,#2c3546);display:flex;align-items:center;justify-content:center;z-index:300}
+#login .lbox{background:#fff;border-radius:14px;padding:30px 30px 24px;width:360px;max-width:92vw}
+#login h2{display:flex;align-items:center;gap:10px;margin-bottom:20px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:13px;margin-bottom:12px}
+.kv span{color:var(--mut)}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:14px}
+.tabs button{padding:9px 16px;font-size:14px;color:var(--ink2);border-bottom:2px solid transparent;margin-bottom:-1px}
+.tabs button.on{color:var(--pri);border-bottom-color:var(--pri);font-weight:600}
+@media (max-width:900px){
+  .side{position:fixed;left:-220px;z-index:60;transition:left .2s}
+  .side.open{left:0}
+  .menu-btn{display:block}
+  .grid2,.frow{grid-template-columns:1fr}
+  .content{padding:14px}
+  .topbar{padding:0 14px}
+}
+</style>
+</head>
+<body>
+<div id="login" class="hidden">
+  <div class="lbox">
+    <h2><span class="logo">冰</span>萌贝管理后台</h2>
+    <div class="fi"><label>账号</label><input id="l-user" autocomplete="username"></div>
+    <div class="fi"><label>密码</label><input id="l-pass" type="password" autocomplete="current-password"></div>
+    <div class="err" id="l-err"></div>
+    <button class="btn pri" style="width:100%;height:40px" id="l-btn">登 录</button>
+    <div class="hint" style="margin-top:14px;text-align:center;font-size:13px"><a href="./">收银台</a> · <a href="m">手机端</a></div>
+  </div>
+</div>
+<div id="app" class="hidden">
+  <aside class="side" id="side">
+    <div class="brand"><span class="logo">冰</span>萌贝后台</div>
+    <nav id="nav"></nav>
+    <div class="foot"><div id="f-user"></div><a href="./">打开收银台</a><a href="m">手机端</a></div>
+  </aside>
+  <div class="main">
+    <div class="topbar">
+      <button class="menu-btn" id="menu-btn">☰</button>
+      <h2 id="title"></h2>
+      <div class="sp"></div>
+      <span class="who" id="who"></span>
+      <button class="btn sm" id="pw-btn">修改密码</button>
+      <button class="btn sm" id="out-btn">退出</button>
+    </div>
+    <div class="content" id="content"></div>
+  </div>
+</div>
+<div id="modal-root"></div>
+<div class="toast" id="toast"></div>
+<script src="static/admin.js"></script>
+<!-- v2 模块页面：每个文件归属一个模块 agent（docs/ARCH.md §2） -->
+<script src="static/admin-goods.js"></script>
+<script src="static/admin-stock.js"></script>
+<script src="static/admin-purchase.js"></script>
+<script src="static/admin-member.js"></script>
+<script src="static/admin-promo.js"></script>
+<script src="static/admin-org.js"></script>
+<script src="static/admin-report.js"></script>
+<script src="static/admin-sys.js"></script>
+</body>
+</html>

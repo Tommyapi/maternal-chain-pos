@@ -1,0 +1,16 @@
+{
+  "name": "萌贝 · 门店助手",
+  "short_name": "门店助手",
+  "description": "母婴连锁老板看板、店长店务、移动审批与盘点",
+  "lang": "zh-CN",
+  "start_url": "../m",
+  "scope": "../",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f4f6f9",
+  "theme_color": "#e5484d",
+  "icons": [
+    {"src": "favicon.png", "sizes": "32x32", "type": "image/png"},
+    {"src": "m-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any"}
+  ]
+}

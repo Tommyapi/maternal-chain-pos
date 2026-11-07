@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+ADMIN_PASSWORD.txt
+*.db
+*.db-wal
+*.db-shm
+.pytest_cache/
+qa/shots/*.tmp
+data/
+seed/seed_data.json
+.local/

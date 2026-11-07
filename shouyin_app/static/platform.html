@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>平台运营后台</title>
+<link rel="icon" href="static/favicon.png">
+<style>
+:root{--bg:#f5f6f8;--card:#fff;--line:#e6e8eb;--txt:#222;--mut:#888;--pri:#e5484d;--ok:#1a7f37;--bad:#c62828}
+*{box-sizing:border-box}body{font:14px/1.6 system-ui,"Microsoft YaHei",sans-serif;margin:0;background:var(--bg);color:var(--txt)}
+header{background:#fff;border-bottom:1px solid var(--line);padding:10px 20px;display:flex;align-items:center;gap:12px}header h1{font-size:17px;margin:0}
+main{max-width:1200px;margin:16px auto;padding:0 16px}.card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:16px;margin-bottom:14px}
+.bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}.sp{flex:1}
+input,select,textarea{border:1px solid #ccd;border-radius:5px;padding:6px 8px;font:inherit}
+.btn{border:1px solid #ccd;background:#fff;border-radius:5px;padding:6px 14px;cursor:pointer;font:inherit}.btn.pri{background:var(--pri);border-color:var(--pri);color:#fff}.btn.sm{padding:2px 8px;font-size:12px}
+table{width:100%;border-collapse:collapse}th,td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;font-size:13px;vertical-align:top}th{background:#fafbfc}
+.tag{display:inline-block;padding:0 6px;border-radius:4px;font-size:12px;background:#eee}.tag.trial{background:#fff4d6}.tag.active{background:#dcf5e3;color:var(--ok)}.tag.expired{background:#ffe7cc}.tag.disabled{background:#fde2e2;color:var(--bad)}
+.hidden{display:none}.err{color:var(--bad);min-height:20px}.hint{color:var(--mut);font-size:12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px 14px}.grid label{display:block;font-size:12px;color:#555}.grid input,.grid select{width:100%}
+#login{max-width:340px;margin:80px auto}#login input{width:100%;margin-bottom:10px}
+.mask{position:fixed;inset:0;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center}.dlg{background:#fff;border-radius:8px;padding:18px;width:min(520px,92vw)}
+.pw{font:600 20px/1.4 monospace;background:#fff8e1;border:1px dashed #e0a800;padding:8px 12px;border-radius:6px;user-select:all}
+</style>
+</head>
+<body>
+<header><h1>平台运营后台</h1><span class="hint">只管理商户档案、状态、额度与管理员；平台账号看不到任何商户经营数据</span><div class="sp"></div><span id="who" class="hint"></span><button class="btn sm hidden" id="out">退出</button></header>
+<div id="login" class="card hidden"><h3>平台账号登录</h3><input id="lu" placeholder="平台账号" autocomplete="username"><input id="lp" type="password" placeholder="密码" autocomplete="current-password"><div class="err" id="le"></div><button class="btn pri" id="lb" style="width:100%">登录</button></div>
+<main id="app" class="hidden">
+  <div class="card" id="ops"></div>
+  <div class="card"><div class="bar"><h3 style="margin:0">商户</h3><input id="kw" placeholder="编码 / 名称 / 联系人"><select id="fst"><option value="">全部状态</option></select><button class="btn" id="go">查询</button><div class="sp"></div><button class="btn pri" id="new">开通商户</button></div><div id="list"></div></div>
+  <div class="card"><div class="bar"><h3 style="margin:0">平台审计</h3><input id="aref" placeholder="商户编码"><button class="btn" id="ago">查询</button></div><div id="audit"></div></div>
+</main>
+<div id="dlg"></div>
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const qs = o => Object.keys(o).filter(k => o[k] !== '' && o[k] != null).map(k => encodeURIComponent(k) + '=' + encodeURIComponent(o[k])).join('&');
+let ME = null, STATUS = {};
+async function api(path, body) {
+  const init = { credentials: 'same-origin', headers: {} };
+  if (body !== undefined) { init.method = 'POST'; init.headers['Content-Type'] = 'application/json'; init.body = JSON.stringify(body); }
+  const r = await fetch(path, init);
+  if (r.status === 401) { showLogin(); throw new Error('请先登录'); }
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok || d.ok === false) throw new Error(d.msg || d.error || ('请求失败 ' + r.status));
+  return d;
+}
+function showLogin() { $('login').classList.remove('hidden'); $('app').classList.add('hidden'); $('out').classList.add('hidden'); }
+function dialog(title, html, onOk, okText) {
+  const box = document.createElement('div'); box.className = 'mask';
+  box.innerHTML = `<div class="dlg"><h3 style="margin-top:0">${esc(title)}</h3>${html}<div class="err" data-err></div><div style="text-align:right;margin-top:10px"><button class="btn" data-x>${onOk ? '取消' : '关闭'}</button> ${onOk ? `<button class="btn pri" data-ok>${esc(okText || '确定')}</button>` : ''}</div></div>`;
+  $('dlg').appendChild(box);
+  box.querySelector('[data-x]').onclick = () => box.remove();
+  if (onOk) box.querySelector('[data-ok]').onclick = async () => { try { await onOk(box); } catch (e) { box.querySelector('[data-err]').textContent = e.message; } };
+  return box;
+}
+const val = (box, n) => (box.querySelector('[name="' + n + '"]') || {}).value || '';
+function showPassword(title, user, pw, notice) {
+  dialog(title, `<p>管理员账号：<b>${esc(user)}</b></p><p>一次性密码（只显示这一次，请当面或安全渠道交给商户）：</p><div class="pw">${esc(pw)}</div><p class="hint">${esc(notice || '')}</p>`);
+}
+
+async function boot() {
+  let me;
+  try { me = await api('api/me'); } catch (e) { return; }
+  if (!me.is_platform) { showLogin(); $('le').textContent = '这是平台运营后台，请用平台账号登录（商户账号请去管理后台）'; return; }
+  ME = me; $('login').classList.add('hidden'); $('app').classList.remove('hidden'); $('out').classList.remove('hidden');
+  $('who').textContent = me.name + '（' + (me.role_name || '') + '）';
+  await Promise.all([loadOps(), loadList(), loadAudit()]);
+}
+const can = p => ME && (ME.perms || []).indexOf(p) >= 0;
+async function loadOps() {
+  try {
+    const d = (await api('api/platform/ops')).data;
+    $('ops').innerHTML = `<div class="bar"><b>运行状态</b><span>版本 ${esc(d.version)}</span><span>库 ${d.db_size_mb} MB</span><span>商户：${Object.keys(d.merchants).map(k => esc(k) + ' ' + d.merchants[k]).join(' · ')}</span><span>导出任务进行中 ${d.export_jobs_running}</span></div>
+      ${d.legacy_blueprints.length ? `<div class="hint" style="color:#b26a00">⚠ 仍有未完成多商户隔离的旧接口（${esc(d.legacy_blueprints.join(', '))}），在它们完成前系统会拒绝开通新商户。</div>` : '<div class="hint">全部接口已完成多商户隔离。</div>'}`;
+  } catch (e) { $('ops').textContent = e.message; }
+}
+async function loadList() {
+  const d = (await api('api/platform/merchants?' + qs({ kw: $('kw').value.trim(), status: $('fst').value }))).data;
+  STATUS = d.status_names;
+  if ($('fst').options.length === 1) Object.keys(STATUS).forEach(k => $('fst').insertAdjacentHTML('beforeend', `<option value="${k}">${esc(STATUS[k])}</option>`));
+  $('list').innerHTML = `<table><tr><th>ID</th><th>编码</th><th>名称</th><th>联系人</th><th>状态</th><th>到期</th><th>门店（已用/额度）</th><th>启用账号（已用/额度）</th><th>管理员</th><th>开通时间</th><th></th></tr>${d.items.map(m => `<tr><td>${m.id}</td><td>${esc(m.code)}</td><td>${esc(m.name)}</td><td>${esc(m.contact)} ${esc(m.phone)}</td><td><span class="tag ${m.status}">${esc(m.status_name)}</span></td><td>${esc(m.expire_date || '-')}</td><td>${m.stores_used} / ${m.max_stores || '不限'}</td><td>${m.users_used} / ${m.max_users || '不限'}</td><td>${esc(m.admin_username)}</td><td>${esc((m.created_at || '').slice(0, 10))}</td>
+    <td>${can('platform.merchant.status') ? `<button class="btn sm" data-st="${m.id}">状态</button>` : ''} ${can('platform.merchant.quota') ? `<button class="btn sm" data-q="${m.id}">额度</button>` : ''} ${can('platform.merchant.reset_admin') ? `<button class="btn sm" data-r="${m.id}">重置管理员</button>` : ''}</td></tr>`).join('')}</table>`;
+  const find = id => d.items.find(x => x.id == id);
+  $('list').querySelectorAll('[data-st]').forEach(b => b.onclick = () => statusDlg(find(b.dataset.st)));
+  $('list').querySelectorAll('[data-q]').forEach(b => b.onclick = () => quotaDlg(find(b.dataset.q)));
+  $('list').querySelectorAll('[data-r]').forEach(b => b.onclick = () => resetDlg(find(b.dataset.r)));
+}
+function statusDlg(m) {
+  dialog('商户状态 · ' + m.name, `<div class="grid"><div><label>新状态</label><select name="status">${Object.keys(STATUS).map(k => `<option value="${k}" ${k === m.status ? 'selected' : ''}>${esc(STATUS[k])}</option>`).join('')}</select></div><div><label>到期日</label><input name="expire_date" type="date" value="${esc(m.expire_date)}"></div></div>
+    <label class="hint">变更原因（必填，写入审计）</label><textarea name="reason" rows="2" style="width:100%"></textarea>
+    <p class="hint">试用/正式：正常使用；到期：只能查询和导出；停用：禁止登录，现有登录立即下线。</p>`, async box => {
+    await api('api/platform/merchants/' + m.id + '/status', { status: val(box, 'status'), expire_date: val(box, 'expire_date'), reason: val(box, 'reason') });
+    box.remove(); loadList(); loadAudit(); loadOps();
+  }, '确认变更');
+}
+function quotaDlg(m) {
+  dialog('门店与账号额度 · ' + m.name, `<div class="grid"><div><label>门店额度（已用 ${m.stores_used}，0=不限）</label><input name="max_stores" type="number" min="0" value="${m.max_stores}"></div><div><label>启用账号额度（已用 ${m.users_used}，0=不限）</label><input name="max_users" type="number" min="0" value="${m.max_users}"></div></div>
+    <label class="hint">原因</label><input name="reason" style="width:100%">`, async box => {
+    await api('api/platform/merchants/' + m.id + '/quota', { max_stores: +val(box, 'max_stores'), max_users: +val(box, 'max_users'), reason: val(box, 'reason') });
+    box.remove(); loadList(); loadAudit();
+  }, '保存');
+}
+function resetDlg(m) {
+  dialog('重置商户管理员 · ' + m.name, `<p class="hint">请先电话/当面核验商户负责人身份。重置后生成一次性密码（不显示原密码），对方原有登录全部下线、首次登录须改密码。</p>
+    <label class="hint">管理员账号（留空=首个商户超管 ${esc(m.admin_username)}）</label><input name="username" style="width:100%">
+    <label class="hint">核验情况 / 原因（必填）</label><textarea name="reason" rows="2" style="width:100%"></textarea>
+    <label class="hint">二次确认：请输入商户编码 <b>${esc(m.code)}</b></label><input name="confirm_code" style="width:100%">`, async box => {
+    const r = (await api('api/platform/merchants/' + m.id + '/reset-admin', { username: val(box, 'username'), reason: val(box, 'reason'), confirm_code: val(box, 'confirm_code') })).data;
+    box.remove(); showPassword('已重置', r.username, r.admin_password, r.notice); loadAudit();
+  }, '确认重置');
+}
+function openDlg() {
+  const req = 'REQ-' + new Date().toISOString().replace(/\D/g, '').slice(0, 14) + '-' + Math.random().toString(36).slice(2, 6);
+  dialog('开通商户', `<div class="grid"><div><label>商户编码*（大写字母数字）</label><input name="code"></div><div><label>商户名称*</label><input name="name"></div>
+    <div><label>联系人</label><input name="contact"></div><div><label>电话</label><input name="phone"></div>
+    <div><label>管理员登录账号*</label><input name="admin_username"></div><div><label>状态</label><select name="status"><option value="trial">试用</option><option value="active">正式</option></select></div>
+    <div><label>门店额度（0=不限）</label><input name="max_stores" type="number" min="0" value="0"></div><div><label>账号额度（0=不限）</label><input name="max_users" type="number" min="0" value="0"></div>
+    <div><label>到期日</label><input name="expire_date" type="date"></div><div><label>开通请求号（防重复，自动生成）</label><input name="open_request_no" value="${req}"></div></div>
+    <p class="hint">网络中断后重试请保持同一个开通请求号，系统只会开通一次。</p>`, async box => {
+    const b = {}; ['code', 'name', 'contact', 'phone', 'admin_username', 'status', 'expire_date', 'open_request_no'].forEach(n => b[n] = val(box, n));
+    b.max_stores = +val(box, 'max_stores'); b.max_users = +val(box, 'max_users');
+    const r = (await api('api/platform/merchants', b)).data;
+    box.remove(); loadList(); loadAudit(); loadOps();
+    if (r.duplicate) dialog('已开通过', '<p>该开通请求号已处理过，商户 ' + esc(r.code) + ' 已存在（不会重复开通）。如需重新发放管理员密码，请用「重置管理员」。</p>');
+    else showPassword('开通成功：' + r.name + '（' + r.mc_no + '）', r.admin_username, r.admin_password, r.notice);
+  }, '开通');
+}
+async function loadAudit() {
+  if (!can('platform.audit.view')) { $('audit').innerHTML = '<span class="hint">无权限</span>'; return; }
+  const d = (await api('api/platform/audit?' + qs({ ref_no: $('aref').value.trim(), size: 50 }))).data;
+  $('audit').innerHTML = `<table><tr><th>时间</th><th>账号</th><th>操作</th><th>商户</th><th>变更</th><th>原因</th><th>级别</th><th>IP</th></tr>${d.items.map(a => `<tr><td>${esc(a.created_at)}</td><td>${esc(a.username)}</td><td>${esc(a.action)}</td><td>${esc(a.ref_no)}</td><td class="hint">${esc((a.before_json ? a.before_json + ' → ' : '') + a.after_json)}</td><td>${esc(a.reason)}</td><td>${esc(a.level)}</td><td>${esc(a.ip)}</td></tr>`).join('') || '<tr><td colspan="8" class="hint">暂无</td></tr>'}</table>`;
+}
+async function login() {
+  const r = await fetch('api/login', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: $('lu').value.trim(), password: $('lp').value }) });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok || !d.ok) { $('le').textContent = d.msg || d.error || '登录失败'; return; }
+  $('lp').value = ''; $('le').textContent = ''; boot();
+}
+$('lb').onclick = login; $('lp').addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
+$('out').onclick = async () => { await fetch('api/logout', { method: 'POST', credentials: 'same-origin' }); location.reload(); };
+$('go').onclick = () => loadList(); $('ago').onclick = () => loadAudit();
+$('new').onclick = () => { if (!can('platform.merchant.open')) { alert('没有开通商户权限'); return; } openDlg(); };
+fetch('api/me', { credentials: 'same-origin' }).then(r => r.ok ? boot() : showLogin()).catch(showLogin);
+</script>
+</body>
+</html>

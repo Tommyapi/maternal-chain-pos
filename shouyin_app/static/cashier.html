@@ -1,0 +1,1254 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>萌贝收银台</title>
+<link rel="icon" href="static/favicon.png">
+<style>
+:root{
+  --pri:#e5484d; --pri-d:#c93a3f; --pri-l:#fff1f1; --ink:#1f2633; --ink2:#4b5565; --mut:#8a94a6;
+  --line:#e6e9ef; --bg:#f3f5f8; --card:#fff; --ok:#16a34a; --warn:#d97706; --blue:#2563eb;
+  --r:10px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{font-family:"Microsoft YaHei","PingFang SC",-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink);font-size:14px;-webkit-font-smoothing:antialiased}
+button{font-family:inherit;cursor:pointer;border:0;background:none;color:inherit}
+input,select{font-family:inherit;font-size:14px;color:var(--ink)}
+.hidden{display:none!important}
+.num{font-variant-numeric:tabular-nums}
+
+/* 顶栏 */
+.top{height:52px;background:#1f2633;color:#fff;display:flex;align-items:center;padding:0 16px;gap:18px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:16px;letter-spacing:.5px}
+.logo{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#ff7a6e,#e53935);display:flex;align-items:center;justify-content:center;font-weight:800}
+.top .info{display:flex;gap:16px;color:#c9d1de;font-size:13px;align-items:center}
+.top .info b{color:#fff;font-weight:600}
+.top select{background:#2c3546;color:#fff;border:1px solid #3c4659;border-radius:6px;padding:4px 8px}
+.top .sp{flex:1}
+.top .tb{padding:7px 12px;border-radius:7px;background:#2c3546;color:#e6eaf1;font-size:13px}
+.top .tb:hover{background:#3a4559}
+.top .tb kbd{font-size:11px;color:#9aa6ba;margin-left:4px}
+.clock{font-size:13px;color:#c9d1de}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#22c55e;margin-right:5px}
+.dot.off{background:#f59e0b}
+
+/* 主体 */
+.main{height:calc(100% - 52px - 38px);display:flex;gap:12px;padding:12px}
+.left{flex:1;display:flex;flex-direction:column;min-width:0;gap:10px}
+.right{width:400px;display:flex;flex-direction:column;gap:10px;min-height:0}
+.card{background:var(--card);border-radius:var(--r);box-shadow:0 1px 2px rgba(16,24,40,.06);border:1px solid var(--line)}
+
+.scanbar{display:flex;gap:8px;padding:10px}
+.scanbar .scan{flex:1;height:48px;border:2px solid var(--pri);border-radius:9px;padding:0 14px;font-size:18px;outline:none}
+.scanbar .scan:focus{box-shadow:0 0 0 4px rgba(229,72,77,.14)}
+.btn{height:48px;padding:0 16px;border-radius:9px;background:#eef1f6;color:var(--ink);font-size:14px;font-weight:600;white-space:nowrap}
+.btn:hover{background:#e3e7ee}
+.btn.pri{background:var(--pri);color:#fff}
+.btn.pri:hover{background:var(--pri-d)}
+.btn.sm{height:32px;padding:0 10px;font-size:13px;border-radius:7px}
+.btn.line{background:#fff;border:1px solid var(--line)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+
+.cart{flex:1;display:flex;flex-direction:column;min-height:0}
+.cart-head,.cart-row{display:grid;grid-template-columns:42px 1fr 100px 132px 110px 40px;align-items:center;gap:8px;padding:0 14px}
+.cart-head{height:38px;color:var(--mut);font-size:12px;border-bottom:1px solid var(--line)}
+.cart-body{flex:1;overflow:auto}
+.cart-row{min-height:58px;border-bottom:1px solid #f0f2f6;cursor:pointer}
+.cart-row:hover{background:#fafbfc}
+.cart-row.sel{background:var(--pri-l);box-shadow:inset 3px 0 0 var(--pri)}
+.cart-row .nm{font-weight:600;line-height:1.35}
+.cart-row .sub{font-size:12px;color:var(--mut);margin-top:2px}
+.cart-row .tag{display:inline-block;font-size:11px;padding:0 5px;border-radius:4px;background:#fff4e5;color:#b45309;margin-left:6px;font-weight:500}
+.cart-row .tag.red{background:#fee2e2;color:#b91c1c}
+.right-al{text-align:right}
+.qty{display:flex;align-items:center;gap:4px}
+.qty button{width:30px;height:30px;border-radius:7px;background:#eef1f6;font-size:18px;line-height:1}
+.qty input{width:52px;height:30px;text-align:center;border:1px solid var(--line);border-radius:7px}
+.del{width:30px;height:30px;border-radius:7px;color:#b4bccb;font-size:18px}
+.del:hover{background:#fee2e2;color:#dc2626}
+.empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#a7b0c0;gap:10px}
+.empty .big{font-size:56px}
+.cart-foot{display:flex;justify-content:space-between;padding:10px 14px;border-top:1px solid var(--line);color:var(--ink2);font-size:13px}
+
+/* 右侧 */
+.sec{padding:10px 14px}
+.sec h4{font-size:13px;color:var(--mut);font-weight:600;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center}
+.mrow{display:flex;gap:8px}
+.mrow input{flex:1;height:38px;border:1px solid var(--line);border-radius:8px;padding:0 10px;outline:none}
+.mrow input:focus{border-color:var(--pri)}
+.mcard{border-radius:9px;background:linear-gradient(135deg,#fff5f5,#fff);border:1px solid #fde1e1;padding:10px 12px}
+.mcard .n{font-size:16px;font-weight:700}
+.mcard .lv{font-size:11px;padding:1px 6px;border-radius:9px;background:#fde68a;color:#92400e;margin-left:6px;vertical-align:2px}
+.mcard .meta{font-size:12px;color:var(--ink2);margin-top:4px}
+.mstat{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
+.mstat div{background:#fff;border-radius:7px;padding:6px;text-align:center;border:1px solid #f3e1e1}
+.mstat b{display:block;font-size:15px}
+.mstat span{font-size:11px;color:var(--mut)}
+.field{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.frow{display:flex;gap:8px}.frow .field{flex:1;min-width:0}.frow .field label{width:auto}
+.field label{width:64px;color:var(--ink2);font-size:13px;flex-shrink:0}
+.field select,.field input{flex:1;height:32px;border:1px solid var(--line);border-radius:7px;padding:0 8px;outline:none;min-width:0;background:#fff}
+.field .btn{height:32px}
+.totals{padding:12px 14px;margin-top:auto}
+.tl{display:flex;justify-content:space-between;color:var(--ink2);margin:3px 0;font-size:13px}
+.tl.dis b{color:var(--ok)}
+.payable{display:flex;justify-content:space-between;align-items:baseline;margin:6px 0 10px}
+.payable span{font-size:15px;font-weight:600}
+.payable b{font-size:34px;color:var(--pri);font-weight:800}
+.paybtn{width:100%;height:54px;font-size:20px;border-radius:11px}
+@media (max-height:800px){.mstat div{padding:3px}.mstat b{font-size:14px}.mcard{padding:8px 10px}.totals{padding:8px 14px}.tl{margin:1px 0}}
+.right .scroll{flex:1;overflow:auto;min-height:0}
+
+/* 快捷键栏 */
+.keys{height:38px;background:#fff;border-top:1px solid var(--line);display:flex;align-items:center;gap:6px;padding:0 12px;overflow:hidden}
+.keys button{padding:5px 10px;border-radius:6px;font-size:12.5px;color:var(--ink2);background:#f4f6f9}
+.keys button:hover{background:#e8ecf2}
+.keys kbd{font-family:Consolas,monospace;font-weight:700;color:var(--pri);margin-right:4px}
+
+/* 弹窗 */
+.mask{position:fixed;inset:0;background:rgba(15,20,30,.45);display:flex;align-items:center;justify-content:center;z-index:50}
+.modal{background:#fff;border-radius:14px;width:520px;max-width:94vw;max-height:92vh;display:flex;flex-direction:column;box-shadow:0 24px 60px rgba(0,0,0,.25)}
+.modal.wide{width:820px}
+.modal.xl{width:980px}
+.mh{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
+.mh h3{font-size:17px}
+.mh .x{font-size:22px;color:var(--mut);width:32px;height:32px;border-radius:8px}
+.mh .x:hover{background:#f1f3f6}
+.mb{padding:16px 20px;overflow:auto}
+.mf{padding:12px 20px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:10px}
+.mf .btn{height:42px}
+.tip{font-size:12px;color:var(--mut)}
+.err{color:#dc2626;font-size:13px;min-height:18px}
+
+/* 结算 */
+.pay-sum{display:flex;justify-content:space-between;align-items:center;background:#fff5f5;border-radius:10px;padding:12px 16px;margin-bottom:12px}
+.pay-sum .a b{font-size:30px;color:var(--pri);font-weight:800}
+.pay-sum .a span{font-size:13px;color:var(--ink2);display:block}
+.methods{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:12px}
+.methods button{height:64px;border-radius:10px;border:2px solid var(--line);background:#fff;font-size:15px;font-weight:600;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.methods button small{font-size:11px;color:var(--mut);font-weight:400}
+.methods button.on{border-color:var(--pri);background:var(--pri-l);color:var(--pri)}
+.methods button:disabled{opacity:.4}
+.amt-row{display:flex;gap:8px;align-items:center}
+.amt-row input{flex:1;height:52px;font-size:26px;font-weight:700;border:2px solid var(--line);border-radius:10px;padding:0 14px;outline:none;text-align:right}
+.amt-row input:focus{border-color:var(--pri)}
+.quick{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.quick button{padding:8px 14px;border-radius:8px;background:#f1f3f7;font-weight:600}
+.plist{margin-top:12px;border:1px dashed var(--line);border-radius:10px;padding:8px 12px}
+.plist .pi{display:flex;justify-content:space-between;align-items:center;padding:4px 0}
+.change{display:flex;justify-content:space-between;margin-top:12px;font-size:16px}
+.change b{font-size:24px;color:var(--ok)}
+.change.due b{color:#dc2626}
+
+/* 表格 */
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{background:#f7f8fa;color:var(--mut);font-weight:600;text-align:left;padding:8px;border-bottom:1px solid var(--line);position:sticky;top:0}
+.tbl td{padding:8px;border-bottom:1px solid #f0f2f6}
+.tbl tr.click{cursor:pointer}
+.tbl tr.click:hover td{background:#fafbfc}
+.tbl .r{text-align:right}
+.pill{display:inline-block;padding:1px 7px;border-radius:9px;font-size:11.5px;background:#eef2ff;color:#3730a3}
+.pill.red{background:#fee2e2;color:#b91c1c}
+.pill.green{background:#dcfce7;color:#166534}
+.pill.gray{background:#f1f5f9;color:#475569}
+.goods-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px}
+.gcell{border:1px solid var(--line);border-radius:10px;padding:10px;cursor:pointer;background:#fff}
+.gcell:hover{border-color:var(--pri);background:#fffafa}
+.gcell .gn{font-weight:600;font-size:13px;line-height:1.35;height:36px;overflow:hidden}
+.gcell .gp{color:var(--pri);font-weight:700;margin-top:6px}
+.gcell .gs{font-size:11.5px;color:var(--mut)}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.chips button{padding:5px 12px;border-radius:16px;background:#f1f3f7;font-size:13px}
+.chips button.on{background:var(--pri);color:#fff}
+
+/* 登录 */
+#login{position:fixed;inset:0;background:#2e3440;display:flex;align-items:center;justify-content:center;z-index:80}
+.lbox{width:380px;background:#fff;border-radius:16px;padding:32px;box-shadow:0 20px 60px rgba(0,0,0,.4)}
+.lbox h2{display:flex;align-items:center;gap:10px;font-size:20px;margin-bottom:22px}
+.lbox .fi{margin-bottom:14px}
+.lbox .fi label{display:block;font-size:13px;color:var(--ink2);margin-bottom:6px;font-weight:600}
+.lbox .fi input{width:100%;height:44px;border:1px solid var(--line);border-radius:9px;padding:0 12px;outline:none;font-size:15px}
+.lbox .fi input:focus{border-color:var(--pri)}
+.cap{display:flex;gap:8px}
+.cap div{width:110px;height:44px;border:1px solid var(--line);border-radius:9px;overflow:hidden;cursor:pointer;display:flex;align-items:center;justify-content:center}
+
+.toast{position:fixed;top:64px;left:50%;transform:translateX(-50%);background:#1f2633;color:#fff;padding:10px 18px;border-radius:9px;z-index:99;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.show{opacity:1}
+.toast.err{background:#dc2626}
+.toast.ok{background:#16a34a}
+#print-frame{position:fixed;width:0;height:0;border:0;right:0;bottom:0}
+@media (max-width:1180px){.right{width:340px}.cart-head,.cart-row{grid-template-columns:34px 1fr 84px 120px 92px 34px}}
+</style>
+</head>
+<body>
+
+<!-- 登录 -->
+<div id="login" class="hidden">
+  <div class="lbox">
+    <h2><span class="logo" style="color:#fff">冰</span>萌贝收银台</h2>
+    <div id="l-pwbox">
+      <div class="fi"><label>账号</label><input id="l-user" autocomplete="username"></div>
+      <div class="fi"><label>密码</label><input id="l-pass" type="password" autocomplete="current-password"></div>
+    </div>
+    <div id="l-pinbox" class="hidden">
+      <div class="fi"><label>门店编码</label><input id="l-store" autocomplete="off"></div>
+      <div class="fi"><label>员工编号</label><input id="l-emp" autocomplete="off"></div>
+      <div class="fi"><label>PIN</label><input id="l-pin" type="password" inputmode="numeric" autocomplete="off"></div>
+    </div>
+    <div class="err" id="l-err"></div>
+    <button class="btn pri" style="width:100%;margin-top:6px" id="l-btn">登 录</button>
+    <div class="tip" style="margin-top:14px;text-align:center"><a href="javascript:void(0)" id="l-mode" style="color:var(--blue)">用员工编号 + PIN 登录</a> · <a href="admin" style="color:var(--blue)">进入管理后台</a></div>
+  </div>
+</div>
+
+<div class="top">
+  <div class="brand"><span class="logo">冰</span>萌贝收银台</div>
+  <div class="info">
+    <span>门店 <b id="t-store">-</b><select id="t-store-sel" class="hidden"></select></span>
+    <span>收银员 <b id="t-user">-</b></span>
+    <span>机号 <b id="t-term">-</b></span>
+    <span id="t-shift"><span class="dot off"></span>未开班</span>
+  </div>
+  <div class="sp"></div>
+  <button class="tb" data-act="orders">订单/退货<kbd>F7</kbd></button>
+  <button class="tb" data-act="shift">交班<kbd>F8</kbd></button>
+  <button class="tb" data-act="display">客显</button>
+  <button class="tb" data-act="settings">设置</button>
+  <button class="tb" data-act="logout">退出</button>
+  <span class="clock" id="clock"></span>
+</div>
+
+<div class="main">
+  <div class="left">
+    <div class="card scanbar">
+      <input class="scan" id="scan" placeholder="扫描商品条码 / 输入条码或名称后回车" autocomplete="off">
+      <button class="btn" data-act="search">商品<kbd style="color:var(--pri);margin-left:4px">F2</kbd></button>
+    </div>
+    <div class="card cart">
+      <div class="cart-head"><div>#</div><div>商品</div><div class="right-al">单价</div><div>数量</div><div class="right-al">小计</div><div></div></div>
+      <div class="cart-body" id="cart-body"></div>
+      <div class="cart-foot"><span id="cart-info">共 0 种 0 件</span><span class="tip">↑↓ 选择 · +/- 改数量 · Del 删除 · F6 改价</span></div>
+    </div>
+  </div>
+
+  <div class="right">
+    <div class="card sec">
+      <h4>会员 <span><button class="btn sm line" data-act="newmember">新会员</button></span></h4>
+      <div id="m-empty"><div class="mrow"><input id="m-kw" placeholder="手机号 / 会员号（F1）"><button class="btn sm pri" style="height:38px" data-act="findmember">查找</button></div></div>
+      <div id="m-card" class="hidden"></div>
+    </div>
+    <div class="card sec scroll">
+
+      <div class="frow"><div class="field"><label>导购</label><select id="guide"><option value="">不指定</option></select></div>
+      <div class="field"><label>抹零</label><select id="round"><option value="none">不抹零</option><option value="jiao">抹分</option><option value="yuan">抹角</option></select></div></div>
+      <div class="field"><label>整单优惠</label><input id="od-val" placeholder="折扣如 95 或 金额如 ¥20" ><button class="btn sm line" data-act="clearod">清除</button></div>
+      <div class="field"><label>优惠券</label><select id="coupon"><option value="">不使用</option></select></div>
+      <div class="field"><label>积分抵扣</label><input id="pts" type="number" min="0" step="100" placeholder="0"><button class="btn sm line" data-act="maxpts">最大</button></div>
+      <div class="field"><label>备注</label><input id="remark" maxlength="100" placeholder="选填"></div>
+      <div class="err" id="price-err"></div>
+    </div>
+    <div class="card totals">
+      <div class="tl"><span>原价合计</span><b class="num" id="s-retail">¥0.00</b></div>
+      <div class="tl"><span>商品金额</span><b class="num" id="s-sub">¥0.00</b></div>
+      <div class="tl dis"><span>优惠（折扣/券/积分/抹零）</span><b class="num" id="s-dis">-¥0.00</b></div>
+      <div class="tl"><span>本单可得积分</span><b class="num" id="s-earn">0</b></div>
+      <div class="payable"><span>应收</span><b class="num" id="s-pay">¥0.00</b></div>
+      <button class="btn pri paybtn" data-act="pay" id="paybtn">结 算（F12）</button>
+    </div>
+  </div>
+</div>
+
+<div class="keys">
+  <button data-act="member"><kbd>F1</kbd>会员</button>
+  <button data-act="search"><kbd>F2</kbd>商品</button>
+  <button data-act="hold"><kbd>F3</kbd>挂单</button>
+  <button data-act="held"><kbd>F4</kbd>取单</button>
+  <button data-act="od"><kbd>F5</kbd>整单折扣</button>
+  <button data-act="chprice"><kbd>F6</kbd>改价</button>
+  <button data-act="orders"><kbd>F7</kbd>订单/退货</button>
+  <button data-act="shift"><kbd>F8</kbd>交班</button>
+  <button data-act="recharge"><kbd>F9</kbd>储值充值</button>
+  <button data-act="reprint"><kbd>F10</kbd>重打小票</button>
+  <button data-act="cash"><kbd>F11</kbd>现金收支</button>
+  <button data-act="clear"><kbd>Esc</kbd>清空</button>
+  <button data-act="pay"><kbd>F12</kbd>结算</button>
+</div>
+
+<div id="modal-root"></div>
+<div class="toast" id="toast"></div>
+<iframe id="print-frame" title="print"></iframe>
+
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money = n => '¥' + Number(n || 0).toFixed(2);
+const fx = n => Number(n || 0).toFixed(2);
+const uid = () => 'C' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+
+const S = {
+  ctx: null, cart: [], sel: -1, member: null, priced: null, lastOrder: null,
+  od: null, auth: null, terminal: localStorage.getItem('pos_terminal') || '', pricing: 0, modalStack: [],
+};
+
+function toast(msg, type) {
+  const t = $('toast'); t.textContent = msg; t.className = 'toast show ' + (type || '');
+  clearTimeout(t._t); t._t = setTimeout(() => t.className = 'toast', 2600);
+}
+async function api(path, opts) {
+  opts = opts || {};
+  const init = { credentials: 'same-origin', headers: {} };
+  if (opts.body !== undefined) { init.method = opts.method || 'POST'; init.headers['Content-Type'] = 'application/json'; init.body = JSON.stringify(opts.body); }
+  else if (opts.method) init.method = opts.method;
+  let r;
+  try { r = await fetch(path, init); } catch (e) { throw new Error('网络连接失败，请检查网络'); }
+  if (r.status === 401) { showLogin(); throw new Error('请先登录'); }
+  let d = {};
+  try { d = await r.json(); } catch (e) { throw new Error('服务器返回异常（' + r.status + '）'); }
+  if (!r.ok || d.ok === false) { const e = new Error(d.msg || d.error || ('请求失败 ' + r.status)); e.status = r.status; e.code = d.code; e.data = d.data; throw e; }
+  return d;
+}
+/* 客显（POS-803）：副屏打开 ?display=1，主屏通过 BroadcastChannel 推送商品、合计、找零 */
+const CD = (() => { try { return new BroadcastChannel('pos_customer_display'); } catch (e) { return null; } })();
+function custShow(msg) { try { if (CD) CD.postMessage(msg); } catch (e) {} }
+function can(p) { return !!(S.ctx && S.ctx.perms && S.ctx.perms.includes(p)); }
+function beep(ok) {
+  try {
+    const a = new (window.AudioContext || window.webkitAudioContext)(); const o = a.createOscillator(); const g = a.createGain();
+    o.frequency.value = ok ? 1500 : 300; g.gain.value = .08; o.connect(g); g.connect(a.destination); o.start(); setTimeout(() => { o.stop(); a.close(); }, ok ? 80 : 260);
+  } catch (e) {}
+}
+
+/* ---------------- 登录 ---------------- */
+function showLogin() { $('login').classList.remove('hidden'); setTimeout(() => $('l-user').focus(), 50); }
+let pinMode = false;
+async function doLogin() {
+  let url = 'api/login', payload;
+  if (pinMode) {
+    const st = $('l-store').value.trim(), emp = $('l-emp').value.trim(), pin = $('l-pin').value;
+    if (!st || !emp || !pin) { $('l-err').textContent = '请填写门店编码、员工编号和 PIN'; return; }
+    url = 'api/pos/login-pin';
+    payload = { store_code: st, emp_no: emp, pin, terminal_no: S.terminal, merchant_code: localStorage.getItem('pos_merchant') || '' };
+    localStorage.setItem('pos_store_code', st);
+  } else {
+    const u = $('l-user').value.trim(), p = $('l-pass').value;
+    if (!u || !p) { $('l-err').textContent = '请填写账号和密码'; return; }
+    payload = { username: u, password: p, client: 'pos' };
+  }
+  try {
+    const r = await fetch(url, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    const d = await r.json();
+    if (!r.ok || !d.ok) { $('l-err').textContent = d.msg || d.error || '登录失败'; $('l-pass').value = ''; $('l-pin').value = ''; return; }
+    $('login').classList.add('hidden'); $('l-pass').value = ''; $('l-pin').value = ''; $('l-err').textContent = '';
+    await boot();
+  } catch (e) { $('l-err').textContent = '网络错误'; }
+}
+$('l-btn').onclick = doLogin;
+$('l-mode').onclick = () => {
+  pinMode = !pinMode;
+  $('l-pwbox').classList.toggle('hidden', pinMode); $('l-pinbox').classList.toggle('hidden', !pinMode);
+  $('l-mode').textContent = pinMode ? '用账号密码登录' : '用员工编号 + PIN 登录';
+  if (pinMode) { $('l-store').value = localStorage.getItem('pos_store_code') || ''; setTimeout(() => ($('l-store').value ? $('l-emp') : $('l-store')).focus(), 30); }
+};
+['l-user', 'l-pass', 'l-store', 'l-emp', 'l-pin'].forEach(id => $(id).addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); }));
+
+/* ---------------- 启动 ---------------- */
+async function boot() {
+  try { S.ctx = await api('api/pos/context?terminal_no=' + encodeURIComponent(S.terminal || '')); } catch (e) { if (e.status !== 401) toast(e.message, 'err'); return; }
+  const c = S.ctx;
+  if (c.merchant_code) localStorage.setItem('pos_merchant', c.merchant_code);
+  localStorage.setItem('pos_store_code', c.store.code);
+  $('t-store').textContent = c.store ? c.store.name : '-';
+  $('t-user').textContent = c.name;
+  if (!S.terminal || !S.terminal.startsWith(c.store.code)) { S.terminal = c.store.code + '01'; localStorage.setItem('pos_terminal', S.terminal); }
+  $('t-term').textContent = S.terminal;
+  const sel = $('t-store-sel');
+  if (c.can_switch_store && c.stores.length > 1) {
+    sel.innerHTML = c.stores.map(s => `<option value="${s.code}" ${s.code === c.store.code ? 'selected' : ''}>${esc(s.name)}</option>`).join('');
+    sel.classList.remove('hidden'); $('t-store').classList.add('hidden');
+  } else { sel.classList.add('hidden'); $('t-store').classList.remove('hidden'); }
+  $('guide').innerHTML = '<option value="">不指定</option>' + c.guides.map(g => `<option value="${esc(g.guide_code || g.emp_no)}">${esc(g.emp_name)}（${esc(g.role || '导购')}）</option>`).join('');
+  $('round').value = c.config.round_mode || 'none';
+  renderShift();
+  if (!c.shift) openShiftModal();
+  restoreDraft();
+  focusScan();
+}
+$('t-store-sel').onchange = async e => {
+  if (S.cart.length && !confirmBox) { }
+  try { await api('api/pos/store', { body: { store: e.target.value } }); S.cart = []; clearMember(); await boot(); toast('已切换门店', 'ok'); }
+  catch (err) { toast(err.message, 'err'); }
+};
+let confirmBox = null;
+function renderShift() {
+  const sh = S.ctx && S.ctx.shift;
+  $('t-shift').innerHTML = sh ? `<span class="dot"></span>班次 #${sh.id} · ${sh.open_time.slice(11, 16)} 开班` : '<span class="dot off"></span>未开班';
+  if (sh && sh.terminal_no && sh.terminal_no !== S.terminal) { S.terminal = sh.terminal_no; localStorage.setItem('pos_terminal', S.terminal); $('t-term').textContent = S.terminal; }
+}
+setInterval(() => { const d = new Date(); $('clock').textContent = d.toLocaleDateString('zh-CN') + ' ' + d.toTimeString().slice(0, 8); }, 1000);
+
+/* ---------------- 购物车 ---------------- */
+function focusScan() { if (!S.modalStack.length) setTimeout(() => $('scan').focus(), 10); }
+function addGoods(g, qty) {
+  qty = qty || 1;
+  if (g.sellable === false) { beep(false); toast(`${g.name} 不能销售：${g.reason || '不可售'}`, 'err'); return; }
+  const i = S.cart.findIndex(x => x.code === g.code && (x.unit || '') === (g.unit || '') && x.price == null && !x.batch_id && !x.is_gift);
+  if (i >= 0) { S.cart[i].qty += qty; S.sel = i; }
+  else {
+    const near = (g.batches || []).length ? (g.batches[0].near ? g.batches[0].expiry_date : '') : (g.near_expiry || '');
+    S.cart.push({ code: g.code, name: g.name, barcode: g.barcode, spec: g.spec, unit: g.unit, rate: g.rate || 1, retail: g.retail, member_price: g.member_price,
+      stock: g.stock, near_expiry: near, batches: g.batches || [], batch_managed: !!g.batch_managed, qty: qty, price: null, batch_id: null, line_remark: '' });
+    S.sel = S.cart.length - 1;
+  }
+  if (g.warn) toast(g.name + '：' + g.warn, 'err');
+  else if (g.stock != null && g.stock - (S.cart[S.sel].qty) < 0) toast(`注意：${g.name} 库存不足（当前 ${g.stock}）`, 'err');
+  beep(true); renderCart(); reprice();
+}
+function batchModal() {
+  const x = S.cart[S.sel]; if (!x) { toast('请先选中一行商品', 'err'); return; }
+  if (!x.batch_managed) { toast('该商品不按批次管理', 'err'); return; }
+  if (!can('pos.batch.choose')) { toast('没有手动指定批次的权限，系统按先到期先出自动分配', 'err'); return; }
+  modal('选择批次 · ' + x.name, `<table class="tbl"><tr><th>批号</th><th>有效期</th><th class="r">可售</th><th></th></tr>
+    <tr class="click" data-b=""><td colspan="3">自动（先到期先出）</td><td>${x.batch_id ? '' : '✓'}</td></tr>
+    ${x.batches.map(b => `<tr class="click" data-b="${b.id}"><td>${esc(b.batch_no)}</td><td>${esc(b.expiry_date || '-')}${b.near ? ' <span class="pill red">临期</span>' : ''}</td><td class="r">${b.qty}</td><td>${x.batch_id == b.id ? '✓' : ''}</td></tr>`).join('')}</table>`,
+    null, { onOpen: el => el.querySelectorAll('tr.click').forEach(tr => tr.onclick = () => { x.batch_id = tr.dataset.b ? +tr.dataset.b : null; closeModal(); renderCart(); reprice(); }) });
+}
+function lineRemarkModal() {
+  const x = S.cart[S.sel]; if (!x) { toast('请先选中一行商品', 'err'); return; }
+  modal('行备注 · ' + x.name, `<div class="field"><label>备注</label><input id="lr-v" maxlength="60" value="${esc(x.line_remark || '')}"></div>`,
+    () => { x.line_remark = $('lr-v').value.trim(); closeModal(); renderCart(); }, { focus: 'lr-v' });
+}
+async function scan(code) {
+  code = (code || '').trim();
+  if (!code) return;
+  let qty = 1;
+  const m = code.match(/^(\d+)\*(.+)$/);  // 支持 3*条码
+  if (m) { qty = parseInt(m[1], 10); code = m[2]; }
+  try { const d = await api('api/pos/goods/scan?code=' + encodeURIComponent(code)); addGoods(d.goods, qty); }
+  catch (e) {
+    if (e.status === 404) { beep(false); openSearch(code); }
+    else toast(e.message, 'err');
+  }
+}
+function renderCart() {
+  const b = $('cart-body');
+  if (!S.cart.length) {
+    b.innerHTML = '<div class="empty"><div class="big">🛒</div><div>扫描商品条码开始收银</div><div class="tip">支持「数量*条码」，如 3*6907992635385</div></div>';
+  } else {
+    const pi = (S.priced && S.priced.items) || [];
+    b.innerHTML = S.cart.map((x, i) => {
+      const p = pi[i];
+      const price = p ? p.price : (x.price != null ? x.price : x.retail);
+      const amt = p ? p.line_amount : price * x.qty;
+      const tags = [];
+      if (x.is_gift) tags.push('<span class="tag">赠品</span>');
+      else if (x.price != null) tags.push('<span class="tag">改价</span>');
+      else if (p && p.base_price < x.retail) tags.push('<span class="tag">会员价</span>');
+      if (p && p.promos && p.promos.length) p.promos.filter(q => q.kind === 'activity').forEach(q => tags.push('<span class="tag">' + esc(q.name || '活动') + '</span>'));
+      if (x.rate > 1) tags.push('<span class="tag">1' + esc(x.unit) + '=' + x.rate + '</span>');
+      if (x.batch_id) { const b = (x.batches || []).find(b => b.id == x.batch_id); tags.push('<span class="tag">批次 ' + esc(b ? b.batch_no : x.batch_id) + '</span>'); }
+      if (x.line_remark) tags.push('<span class="tag">' + esc(x.line_remark) + '</span>');
+      if (x.stock != null && x.stock < x.qty) tags.push('<span class="tag red">库存' + x.stock + '</span>');
+      if (x.near_expiry) { const days = Math.round((new Date(x.near_expiry) - new Date()) / 864e5); if (days <= 60) tags.push('<span class="tag red">' + days + '天到期</span>'); }
+      return `<div class="cart-row ${i === S.sel ? 'sel' : ''}" data-i="${i}">
+        <div class="tip">${i + 1}</div>
+        <div><div class="nm">${esc(x.name)}${tags.join('')}</div><div class="sub">${esc(x.barcode)} ${x.spec ? '· ' + esc(x.spec) : ''} ${x.unit ? '· ' + esc(x.unit) : ''}${x.retail !== price ? ' · 原价 ' + fx(x.retail) : ''}</div></div>
+        <div class="right-al num">${fx(price)}</div>
+        <div class="qty"><button data-q="-1">−</button><input value="${x.qty}" data-qi="${i}" inputmode="numeric"><button data-q="1">+</button></div>
+        <div class="right-al num"><b>${fx(amt)}</b></div>
+        <div><button class="del" data-del="${i}" title="删除">×</button></div>
+      </div>`;
+    }).join('');
+  }
+  const n = S.cart.reduce((a, x) => a + Number(x.qty), 0);
+  $('cart-info').textContent = `共 ${S.cart.length} 种 ${n} 件`;
+  saveDraft();
+}
+$('cart-body').addEventListener('click', e => {
+  const row = e.target.closest('.cart-row'); if (!row) return;
+  const i = +row.dataset.i;
+  if (e.target.dataset.del != null) { S.cart.splice(i, 1); S.sel = Math.min(S.sel, S.cart.length - 1); renderCart(); reprice(); focusScan(); return; }
+  if (e.target.dataset.q) { setQty(i, S.cart[i].qty + Number(e.target.dataset.q)); return; }
+  S.sel = i; renderCart();
+  if (e.target.tagName !== 'INPUT') focusScan();
+});
+$('cart-body').addEventListener('change', e => {
+  if (e.target.dataset.qi != null) setQty(+e.target.dataset.qi, Number(e.target.value));
+});
+function setQty(i, q) {
+  if (!(q > 0)) { S.cart.splice(i, 1); S.sel = Math.min(S.sel, S.cart.length - 1); }
+  else S.cart[i].qty = Math.min(9999, Math.round(q * 1000) / 1000);
+  renderCart(); reprice(); focusScan();
+}
+
+/* ---------------- 计价（服务端） ---------------- */
+function orderBody() {
+  const body = { items: S.cart.map(x => {
+    const o = { code: x.code, qty: x.qty, unit: x.unit || null };
+    if (x.price != null) o.price = x.price;
+    if (x.batch_id) o.batch_id = x.batch_id;
+    if (x.is_gift) o.is_gift = true;
+    if (x.line_remark) o.line_remark = x.line_remark;
+    return o; }), round_mode: $('round').value };
+  if (S.member) body.member_code = S.member.code;
+  if (S.od) body.order_discount = S.od;
+  if ($('coupon').value) body.coupon_no = $('coupon').value;
+  const pts = parseInt($('pts').value || '0', 10); if (pts > 0) body.points_used = pts;
+  body.guide_code = $('guide').value; body.remark = $('remark').value; body.terminal_no = S.terminal;
+  if (S.auth) Object.assign(body, S.auth);
+  return body;
+}
+let priceTimer = null;
+function reprice() { clearTimeout(priceTimer); priceTimer = setTimeout(doPrice, 120); }
+async function doPrice() {
+  if (!S.cart.length) { S.priced = null; showTotals(); return; }
+  const seq = ++S.pricing;
+  try {
+    const d = await api('api/pos/price', { body: orderBody() });
+    if (seq !== S.pricing) return;
+    S.priced = d;
+    const na = (d.need_auth || []).filter(n => !n.self_ok);
+    $('price-err').textContent = (na.length ? '结算时需店长授权：' + na.map(n => n.label).join('、') + '。' : '') + ((d.explain || []).length ? ' ' + d.explain.join('；') : '');
+    custShow({ type: 'cart', items: d.items.map(i => ({ name: i.name, qty: i.qty, unit: i.unit, amount: i.amount })), payable: d.payable, discount: d.discount_total });
+  } catch (e) {
+    if (seq !== S.pricing) return;
+    $('price-err').textContent = e.message; S.priced = null;
+  }
+  renderCart(); showTotals();
+}
+function showTotals() {
+  const p = S.priced;
+  $('s-retail').textContent = money(p ? p.retail_total : 0);
+  $('s-sub').textContent = money(p ? p.subtotal : 0);
+  $('s-dis').textContent = '-' + money(p ? (p.order_discount + p.coupon_amount + p.points_amount + p.round_off) : 0);
+  $('s-earn').textContent = p ? p.points_earned : 0;
+  $('s-pay').textContent = money(p ? p.payable : 0);
+  $('paybtn').disabled = !p;
+}
+['coupon', 'round', 'guide'].forEach(id => $(id).addEventListener('change', () => { reprice(); focusScan(); }));
+$('pts').addEventListener('change', reprice);
+$('od-val').addEventListener('change', () => { parseOd(); reprice(); });
+function parseOd() {
+  const v = $('od-val').value.trim();
+  if (!v) { S.od = null; return; }
+  if (/^[¥￥]/.test(v)) { S.od = { amount: parseFloat(v.slice(1)) || 0 }; return; }
+  let n = parseFloat(v);
+  if (isNaN(n)) { S.od = null; return; }
+  if (n > 10) n = n / 100; else if (n > 1) n = n / 10;   // 95→0.95；9.5→0.95；0.95→0.95
+  S.od = { rate: Math.round(n * 1000) / 1000 };
+}
+
+/* ---------------- 会员 ---------------- */
+async function findMember(kw) {
+  kw = (kw || $('m-kw').value).trim();
+  if (!kw) { $('m-kw').focus(); return; }
+  try {
+    const d = await api('api/pos/member/lookup?kw=' + encodeURIComponent(kw));
+    if (d.member) setMember(d.member);
+    else if (d.candidates) pickMember(d.candidates);
+  } catch (e) { toast(e.message, 'err'); if (e.status === 404 && /^\d{11}$/.test(kw)) newMemberModal(kw); }
+}
+function pickMember(list) {
+  modal('选择会员', `<table class="tbl"><tr><th>会员号</th><th>姓名</th><th>手机</th><th>等级</th></tr>${list.map(m => `<tr class="click" data-code="${esc(m.code)}"><td>${esc(m.code)}</td><td>${esc(m.name)}</td><td>${esc(m.phone)}</td><td>${esc(m.level)}</td></tr>`).join('')}</table>`, null, { onOpen: el => el.querySelectorAll('tr.click').forEach(tr => tr.onclick = async () => { closeModal(); findMember(tr.dataset.code); }) });
+}
+function setMember(m) {
+  S.member = m;
+  const b = m.baby;
+  const babyTxt = b ? `${b.baby_name || '宝宝'} ${b.baby_gender || ''} · ${b.axis || ''}${b.birthday ? ' · ' + b.birthday : ''}` : '未登记宝宝信息';
+  $('m-card').innerHTML = `<div class="mcard">
+    <div style="display:flex;justify-content:space-between"><div><span class="n">${esc(m.name)}</span><span class="lv">${esc(m.level || '普通会员')}</span></div><button class="btn sm line" data-act="clearmember">更换</button></div>
+    <div class="meta">${esc(m.phone || '')} · ${esc(m.code)}</div>
+    <div class="meta">👶 ${esc(babyTxt)}</div>
+    ${m.warn ? `<div class="err">${esc(m.warn)}</div>` : ''}
+    <div class="mstat"><div><b>${m.points}</b><span>积分</span></div><div><b>${m.stored_balance == null ? '***' : fx(m.stored_balance)}</b><span>储值余额</span></div><div><b>${m.coupons.length}</b><span>可用券</span></div></div>
+    <div class="meta" style="margin-top:6px">累计消费 ${money(m.amount)} · ${m.orders} 单${m.last_time ? ' · 最近 ' + esc(m.last_time.slice(0, 10)) : ''}</div>
+  </div>`;
+  $('m-card').classList.remove('hidden'); $('m-empty').classList.add('hidden');
+  $('coupon').innerHTML = '<option value="">不使用</option>' + m.coupons.map(c => `<option value="${esc(c.coupon_no)}">${esc(c.template_name)} 满${c.threshold}减${c.face_value}</option>`).join('');
+  $('pts').value = '';
+  if (m.guide_code && !$('guide').value) { const o = [...$('guide').options].find(x => x.value === m.guide_code); if (o) $('guide').value = m.guide_code; }
+  reprice(); focusScan();
+}
+function clearMember() {
+  S.member = null; $('m-card').classList.add('hidden'); $('m-empty').classList.remove('hidden'); $('m-kw').value = '';
+  $('coupon').innerHTML = '<option value="">不使用</option>'; $('pts').value = ''; reprice();
+}
+$('m-kw').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); findMember(); } });
+
+function newMemberModal(phone) {
+  modal('登记新会员', `
+    <div class="field"><label>手机号*</label><input id="nm-phone" maxlength="11" value="${esc(phone || '')}"></div>
+    <div class="field"><label>姓名</label><input id="nm-name" placeholder="如：王女士"></div>
+    <div class="field"><label>宝宝生日</label><input id="nm-bb" type="date"></div>
+    <div class="field"><label>宝宝昵称</label><input id="nm-bn"></div>
+    <div class="field"><label>宝宝性别</label><select id="nm-bg"><option value="">未知</option><option>男</option><option>女</option></select></div>
+    <div class="tip">怀孕中可填预产期作为宝宝生日。</div><div class="err" id="nm-err"></div>`,
+    async () => {
+      try {
+        const d = await api('api/pos/member', { body: { phone: $('nm-phone').value.trim(), name: $('nm-name').value.trim(), baby_birthday: $('nm-bb').value, baby_name: $('nm-bn').value.trim(), baby_gender: $('nm-bg').value, guide_code: $('guide').value } });
+        closeModal(); setMember(d.member); toast('会员登记成功', 'ok');
+      } catch (e) { $('nm-err').textContent = e.message; }
+    }, { okText: '登记', focus: phone ? 'nm-name' : 'nm-phone' });
+}
+
+function rechargeModal() {
+  if (!S.member) { toast('请先查找会员', 'err'); $('m-kw').focus(); return; }
+  const rules = '充值有赠送规则时自动赠送（如充500送50）';
+  modal('储值充值 · ' + S.member.name, `
+    <div class="pay-sum"><div class="a"><span>当前余额</span><b>${money(S.member.stored_balance)}</b></div></div>
+    <div class="field"><label>充值金额</label><input id="rc-amt" type="number" min="1" step="1"></div>
+    <div class="quick">${[200, 500, 1000, 2000, 5000].map(v => `<button data-v="${v}">${v}</button>`).join('')}</div>
+    <div class="field" style="margin-top:10px"><label>收款方式</label><select id="rc-m"><option value="wechat">微信</option><option value="alipay">支付宝</option><option value="cash">现金</option><option value="bankcard">银行卡</option></select></div>
+    <div class="tip">${rules}</div><div class="err" id="rc-err"></div>`,
+    async () => {
+      try {
+        const d = await api('api/pos/recharge', { body: { member_code: S.member.code, amount: parseFloat($('rc-amt').value), method: $('rc-m').value, client_id: S.rcId || (S.rcId = uid()) } });
+        S.rcId = null;
+        closeModal(); setMember(d.member);
+        toast(`充值成功 ${fx(d.amount)}${d.gift ? ' 赠 ' + fx(d.gift) : ''}，余额 ${fx(d.balance)}`, 'ok');
+        printRecharge(d);
+      } catch (e) { $('rc-err').textContent = e.message; }
+    }, { okText: '确认收款并充值', focus: 'rc-amt', onOpen: el => el.querySelectorAll('.quick button').forEach(b => b.onclick = () => { $('rc-amt').value = b.dataset.v; }) });
+}
+
+/* ---------------- 商品搜索 ---------------- */
+function openSearch(kw) {
+  let cat = '';
+  modal('商品查询', `<div class="mrow" style="margin-bottom:10px"><input id="gs-kw" placeholder="名称 / 条码 / 品牌" value="${esc(kw || '')}"></div><div class="chips" id="gs-cats"></div><div class="goods-grid" id="gs-list"><div class="tip">加载中…</div></div>`, null, {
+    wide: 'xl', focus: 'gs-kw', onOpen: () => {
+      const run = async () => {
+        try {
+          const d = await api('api/pos/goods/search?kw=' + encodeURIComponent($('gs-kw').value.trim()) + '&cat=' + encodeURIComponent(cat));
+          $('gs-cats').innerHTML = ['', ...d.cats].map(c => `<button data-c="${esc(c)}" class="${c === cat ? 'on' : ''}">${c || '全部'}</button>`).join('');
+          $('gs-cats').querySelectorAll('button').forEach(b => b.onclick = () => { cat = b.dataset.c; run(); });
+          $('gs-list').innerHTML = d.rows.length ? d.rows.map((g, i) => `<div class="gcell" data-i="${i}"><div class="gn">${esc(g.name)}</div><div class="gs">${esc(g.brand_name || '')} · ${esc(g.spec || g.unit || '')}</div><div class="gp">${money(g.retail)}${g.member_price < g.retail ? ` <span class="gs">会员 ${fx(g.member_price)}</span>` : ''}</div><div class="gs">库存 ${g.stock} · ${esc(g.barcode)}</div></div>`).join('') : '<div class="tip">没有找到商品</div>';
+          $('gs-list').querySelectorAll('.gcell').forEach(c => c.onclick = () => { addGoods(d.rows[+c.dataset.i]); closeModal(); });
+        } catch (e) { $('gs-list').innerHTML = `<div class="err">${esc(e.message)}</div>`; }
+      };
+      let t = null; $('gs-kw').addEventListener('input', () => { clearTimeout(t); t = setTimeout(run, 250); });
+      $('gs-kw').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); const f = document.querySelector('#gs-list .gcell'); if (f) f.click(); } });
+      run();
+    }
+  });
+}
+
+/* ---------------- 授权 ---------------- */
+const KIND_NAME = { discount: '折扣', price_change: '改价', refund: '退款', no_receipt_refund: '无单退货', cash_out: '现金支出' };
+/* 超额度（NEED_AUTH）：店长现场输账号+密码或 PIN；或提交审批，批准后填审批单号重提。返回要并入请求体的字段，取消返回 null。 */
+function authModal(reason, need) {
+  need = need || {};
+  return new Promise(resolve => {
+    let done = false;
+    const kindTxt = KIND_NAME[need.kind] || '';
+    modal('店长授权', `<div class="tip" style="margin-bottom:10px">${esc(reason || '该操作超出本人权限，需要店长授权')}</div>
+      <div class="field"><label>授权人账号</label><input id="au-u" autocomplete="off"></div>
+      <div class="field"><label>密码或 PIN</label><input id="au-p" type="password" autocomplete="off"></div>
+      <div class="field"><label>或审批单号</label><input id="au-ap" placeholder="审批通过后填写 AP 开头的单号" autocomplete="off"></div>
+      ${need.kind ? `<div class="tip">店长不在？<a href="javascript:void(0)" id="au-req" style="color:var(--blue)">提交${esc(kindTxt)}审批</a>（店长在手机端审批）</div>` : ''}
+      <div class="err" id="au-err"></div>`,
+      async () => {
+        const ap = $('au-ap').value.trim();
+        if (ap) { done = true; resolve({ approval_no: ap }); closeModal(); return; }
+        const u = $('au-u').value.trim(), p = $('au-p').value;
+        if (!u || !p) { $('au-err').textContent = '请输入授权人账号和密码/PIN'; return; }
+        const a = /^\d{4,8}$/.test(p) ? { auth_user: u, auth_pin: p } : { auth_user: u, auth_pass: p };
+        try { await api('api/pos/auth', { body: Object.assign({ kind: need.kind || null, value: need.value }, a) }); done = true; resolve(a); closeModal(); }
+        catch (e) { $('au-err').textContent = e.message; }
+      }, { okText: '授权', focus: 'au-u', onClose: () => { if (!done) resolve(null); }, onOpen: () => {
+        const rq = $('au-req'); if (!rq) return;
+        rq.onclick = async () => {
+          const why = prompt('申请原因（店长审批时可见）', '') || '';
+          try {
+            const d = await api('api/approvals', { body: { kind: need.kind, store_code: need.store_code || S.ctx.store.code, value: need.value || '1',
+              title: reason || (kindTxt + '申请'), reason: why, request_key: uid() } });
+            $('au-ap').value = d.data.approval_no; $('au-err').textContent = '已提交审批 ' + d.data.approval_no + '，店长同意后点「授权」即可继续';
+          } catch (e) { $('au-err').textContent = e.message; }
+        };
+      } });
+  });
+}
+/* 发请求，遇到 NEED_AUTH 自动弹授权，授权后带凭据重发一次 */
+async function withAuth(path, body, reason) {
+  try { return await api(path, { body }); }
+  catch (e) {
+    if (e.code !== 'NEED_AUTH') throw e;
+    const a = await authModal(reason ? reason + '：' + e.message : e.message, e.data || {});
+    if (!a) throw new Error('已取消');
+    return await api(path, { body: Object.assign({}, body, a) });
+  }
+}
+async function ensureAuth() {
+  if (!S.priced || S.auth) return true;
+  const na = (S.priced.need_auth || []).filter(n => !n.self_ok);
+  if (!na.length) return true;
+  const a = await authModal('需授权：' + na.map(n => n.label).join('、'), na[0]);
+  if (!a) return false;
+  S.auth = a; return true;
+}
+
+/* ---------------- 结算 ---------------- */
+async function payModal() {
+  if (!S.cart.length) { toast('购物车是空的', 'err'); return; }
+  if (!S.ctx.shift) { openShiftModal(); return; }
+  await doPrice();
+  if (!S.priced) { toast($('price-err').textContent || '计价失败', 'err'); return; }
+  if (!(await ensureAuth())) return;
+  const P = S.priced;
+  const pays = [];
+  let method = 'cash';
+  const methods = S.ctx.pay_methods.filter(m => m.code !== 'other');
+  const paid = () => pays.reduce((a, p) => a + p.amount, 0);
+  const remain = () => Math.max(0, Math.round((P.payable - paid()) * 100) / 100);
+  modal('收款', `
+    <div class="pay-sum"><div class="a"><span>应收金额</span><b class="num">${money(P.payable)}</b></div><div class="a" style="text-align:right"><span>${S.member ? esc(S.member.name) + ' · 储值 ' + fx(S.member.stored_balance) : '非会员'}</span><span>共 ${S.cart.length} 种商品 · 优惠 ${fx(P.retail_total - P.payable)}</span></div></div>
+    <div class="methods" id="pm">${methods.map((m, i) => `<button data-m="${m.code}" ${m.code === 'stored' && !S.member ? 'disabled' : ''}>${esc(m.name)}<small>F${i + 1}</small></button>`).join('')}</div>
+    <div class="amt-row"><input id="pay-amt" class="num" inputmode="decimal"><button class="btn" id="pay-add">加入组合</button></div>
+    <div class="quick" id="pay-quick"></div>
+    <div class="plist hidden" id="pay-list"></div>
+    <div class="change" id="pay-change"></div>
+    <div class="err" id="pay-err"></div>
+    <div class="tip">F1-F${methods.length} 切换支付方式 · 回车确认收款 · 微信/支付宝请确认顾客已付款成功</div>`,
+    () => confirmPay(), { okText: '确认收款（Enter）', focus: 'pay-amt', wide: 'wide', onOpen: el => {
+      const setM = m => { method = m; el.querySelectorAll('#pm button').forEach(b => b.classList.toggle('on', b.dataset.m === m)); refresh(true); $('pay-amt').focus(); $('pay-amt').select(); };
+      const refresh = resetAmt => {
+        const r = remain();
+        if (resetAmt) $('pay-amt').value = method === 'stored' && S.member ? fx(Math.min(r, S.member.stored_balance)) : fx(r);
+        const q = [];
+        if (method === 'cash') { const base = r; [Math.ceil(base), Math.ceil(base / 10) * 10, Math.ceil(base / 50) * 50, Math.ceil(base / 100) * 100].forEach(v => { if (v > 0 && !q.includes(v)) q.push(v); }); }
+        $('pay-quick').innerHTML = q.map(v => `<button data-v="${v}">¥${v}</button>`).join('');
+        $('pay-quick').querySelectorAll('button').forEach(b => b.onclick = () => { $('pay-amt').value = b.dataset.v; showChange(); confirmPay(); });
+        $('pay-list').classList.toggle('hidden', !pays.length);
+        $('pay-list').innerHTML = pays.map((p, i) => `<div class="pi"><span>${esc(p.name)}</span><span><b class="num">${fx(p.amount)}</b> <button class="btn sm line" data-rm="${i}">移除</button></span></div>`).join('');
+        $('pay-list').querySelectorAll('[data-rm]').forEach(b => b.onclick = () => { pays.splice(+b.dataset.rm, 1); refresh(true); });
+        showChange();
+      };
+      const showChange = () => {
+        const cur = parseFloat($('pay-amt').value) || 0;
+        const total = paid() + cur; const diff = Math.round((total - P.payable) * 100) / 100;
+        const el2 = $('pay-change');
+        if (diff >= 0) { el2.className = 'change'; el2.innerHTML = `<span>${method === 'cash' || pays.some(p => p.method === 'cash') ? '找零' : '已收齐'}</span><b class="num">${money(diff)}</b>`; }
+        else { el2.className = 'change due'; el2.innerHTML = `<span>还差</span><b class="num">${money(-diff)}</b>`; }
+      };
+      S._payCtx = { pays, getMethod: () => method, setM, refresh };
+      el.querySelectorAll('#pm button').forEach(b => b.onclick = () => setM(b.dataset.m));
+      $('pay-amt').addEventListener('input', showChange);
+      $('pay-amt').addEventListener('keydown', e => {
+        if (/^[1-9]$/.test(e.key) && e.altKey) { }
+      });
+      $('pay-add').onclick = () => {
+        const a = Math.round((parseFloat($('pay-amt').value) || 0) * 100) / 100;
+        if (a <= 0) return;
+        if (method !== 'cash' && a > remain() + 0.001) { $('pay-err').textContent = '非现金金额不能超过剩余应收'; return; }
+        pays.push({ method, name: methods.find(m => m.code === method).name, amount: a }); $('pay-err').textContent = '';
+        const next = remain() > 0 ? (method === 'cash' ? 'wechat' : 'cash') : method; setM(next);
+      };
+      setM(S.member && S.member.stored_balance >= P.payable && false ? 'stored' : 'cash');
+    } });
+
+  async function confirmPay() {
+    const ctx = S._payCtx; const m = ctx.getMethod();
+    const cur = Math.round((parseFloat($('pay-amt').value) || 0) * 100) / 100;
+    const list = ctx.pays.slice();
+    if (cur > 0) list.push({ method: m, amount: cur });
+    const total = list.reduce((a, p) => a + p.amount, 0);
+    if (total + 0.001 < P.payable) { $('pay-err').textContent = '实收金额不足'; return; }
+    const btn = document.querySelector('.modal .mf .pri'); if (btn) { btn.disabled = true; btn.textContent = '提交中…'; }
+    const body = orderBody(); body.payments = list; body.client_id = S.clientId || (S.clientId = uid());
+    saveDraft();      // 断电/崩溃后恢复草稿会带同一个 client_id 重提：已成交则直接拿回原单，不会重复开单（POS-505/506）
+    try {
+      let d;
+      try { d = await api('api/pos/checkout', { body }); }
+      catch (e) {
+        if (e.code !== 'NEED_AUTH') throw e;
+        S.auth = null;
+        const a = await authModal(e.message, e.data || {});
+        if (!a) throw new Error('已取消授权，订单未提交');
+        S.auth = a; d = await api('api/pos/checkout', { body: Object.assign(body, a) });
+      }
+      closeModal();
+      S.lastOrder = d.order;
+      custShow({ type: 'done', payable: d.payable, paid: d.paid_total, change: d.change });
+      if (localStorage.getItem('pos_autoprint') !== '0') printReceipt(d.order, false, true);
+      doneModal(d);
+      resetOrder();
+    } catch (e) {
+      $('pay-err').textContent = e.message; if (btn) { btn.disabled = false; btn.textContent = '确认收款（Enter）'; }
+      if (e.code === 'AUTH_FAILED' || e.code === 'APPROVAL_MISMATCH' || e.code === 'APPROVAL_NOT_READY') { S.auth = null; }
+    }
+  }
+}
+function doneModal(d) {
+  modal('收款成功', `<div style="text-align:center;padding:10px 0">
+    <div style="font-size:54px">✅</div>
+    <div style="font-size:15px;color:var(--ink2);margin-top:6px">单号 ${esc(d.order_no)}</div>
+    <div style="display:flex;justify-content:center;gap:40px;margin-top:16px"><div><div class="tip">实收</div><div style="font-size:26px;font-weight:800">${money(d.paid_total)}</div></div>
+    <div><div class="tip">找零</div><div style="font-size:26px;font-weight:800;color:var(--ok)">${money(d.change)}</div></div></div>
+    ${d.order.points_earned ? `<div class="tip" style="margin-top:10px">本单积分 +${d.order.points_earned}</div>` : ''}
+  </div>`, () => closeModal(), { okText: '继续收银（Enter）', extra: [{ text: '预览小票', fn: () => previewReceipt(S.lastOrder) }, { text: '重打小票', fn: () => reprintOrder(S.lastOrder) }] });
+  setTimeout(() => { const h = document.querySelector('.modal h3'); if (S.modalStack.length && h && h.textContent === '收款成功') closeModal(); }, 20000);
+}
+function resetOrder() {
+  S.cart = []; S.sel = -1; S.priced = null; S.od = null; S.auth = null; S.clientId = null;
+  $('od-val').value = ''; $('remark').value = ''; $('pts').value = '';
+  clearMember(); renderCart(); showTotals(); localStorage.removeItem('pos_draft');
+}
+
+/* ---------------- 改价 / 折扣 ---------------- */
+function chPriceModal() {
+  const x = S.cart[S.sel]; if (!x) { toast('请先选中一行商品', 'err'); return; }
+  const p = S.priced && S.priced.items[S.sel];
+  modal('改价 · ' + x.name, `<div class="tip" style="margin-bottom:8px">零售价 ${fx(x.retail)}${x.member_price < x.retail ? ' · 会员价 ' + fx(x.member_price) : ''}；当前 ${fx(p ? p.price : x.retail)}</div>
+    <div class="field"><label>新单价</label><input id="cp-v" type="number" step="0.01" min="0"></div>
+    <div class="field"><label>或折扣</label><input id="cp-r" placeholder="如 9 折填 90"></div>
+    <div class="field"><label>赠送</label><select id="cp-g"><option value="">否</option><option value="1" ${x.is_gift ? 'selected' : ''}>是（0 元赠送，需授权）</option></select></div>
+    <div class="tip">超出本人改价额度时结算需店长授权。留空并确定 = 恢复原价。</div>`,
+    () => {
+      let v = $('cp-v').value.trim(); const r = $('cp-r').value.trim();
+      if (!v && r) { let n = parseFloat(r); if (n > 10) n = n / 100; else if (n > 1) n = n / 10; v = (x.retail * n).toFixed(2); }
+      x.is_gift = $('cp-g').value === '1';
+      x.price = x.is_gift ? null : (v === '' ? null : Math.max(0, Math.round(parseFloat(v) * 100) / 100));
+      S.auth = null; closeModal(); renderCart(); reprice();
+    }, { focus: 'cp-v', extra: [{ text: '选批次', fn: () => { closeModal(); batchModal(); } }, { text: '行备注', fn: () => { closeModal(); lineRemarkModal(); } }] });
+}
+function odModal() {
+  modal('整单优惠', `<div class="field"><label>折扣</label><input id="od-r" placeholder="如 95 折填 95"></div>
+    <div class="field"><label>或减金额</label><input id="od-a" type="number" step="0.01" placeholder="如 20"></div>
+    <div class="quick">${[98, 95, 90, 88, 85].map(v => `<button data-v="${v}">${v / 10}折</button>`).join('')}</div>`,
+    () => {
+      const r = $('od-r').value.trim(), a = $('od-a').value.trim();
+      $('od-val').value = a ? '¥' + a : r; parseOd(); S.auth = null; closeModal(); reprice();
+    }, { focus: 'od-r', onOpen: el => el.querySelectorAll('.quick button').forEach(b => b.onclick = () => { $('od-r').value = b.dataset.v; $('od-a').value = ''; }) });
+}
+
+/* ---------------- 挂单 ---------------- */
+async function holdOrder() {
+  if (!S.cart.length) { toast('购物车是空的', 'err'); return; }
+  try {
+    await api('api/pos/held', { body: { title: S.member ? S.member.name : '', payload: { items: S.cart, member_code: S.member ? S.member.code : '', od: $('od-val').value, remark: $('remark').value } } });
+    resetOrder(); toast('已挂单', 'ok');
+  } catch (e) { toast(e.message, 'err'); }
+}
+async function heldModal() {
+  let d; try { d = await api('api/pos/held'); } catch (e) { toast(e.message, 'err'); return; }
+  if (!d.rows.length) { toast('没有挂单'); return; }
+  modal('取单', `<table class="tbl"><tr><th>时间</th><th>会员</th><th>商品</th><th class="r">件数</th><th></th></tr>${d.rows.map(h => `<tr><td>${esc(h.created_at.slice(11, 16))}</td><td>${esc(h.title || '-')}</td><td>${esc(h.payload.items.map(i => i.name).join('、').slice(0, 40))}</td><td class="r">${h.payload.items.reduce((a, i) => a + i.qty, 0)}</td><td class="r"><button class="btn sm pri" data-take="${h.id}">取出</button> <button class="btn sm line" data-del="${h.id}">删除</button></td></tr>`).join('')}</table>`, null, {
+    wide: 'wide', onOpen: el => {
+      el.querySelectorAll('[data-take]').forEach(b => b.onclick = async () => {
+        if (S.cart.length) { toast('请先结算或挂起当前单', 'err'); return; }
+        const h = d.rows.find(x => x.id == b.dataset.take);
+        S.cart = h.payload.items; S.sel = 0; $('od-val').value = h.payload.od || ''; $('remark').value = h.payload.remark || ''; parseOd();
+        await api('api/pos/held/' + h.id, { method: 'DELETE' });
+        closeModal(); renderCart(); reprice();
+        if (h.payload.member_code) findMember(h.payload.member_code);
+      });
+      el.querySelectorAll('[data-del]').forEach(b => b.onclick = async () => { await api('api/pos/held/' + b.dataset.del, { method: 'DELETE' }); closeModal(); heldModal(); });
+    }
+  });
+}
+
+/* ---------------- 订单查询 / 退货 ---------------- */
+async function ordersModal() {
+  modal('订单查询 / 退货', `<div class="mrow" style="margin-bottom:10px"><input id="oq-kw" placeholder="单号 / 扫小票条码 / 会员手机 / 姓名（默认显示今天本门店）"><button class="btn sm pri" style="height:38px" id="oq-go">查询</button>${can('pos.refund.no_receipt') ? '<button class="btn sm line" style="height:38px" id="oq-nr">无单退货</button>' : ''}</div><div style="max-height:56vh;overflow:auto"><table class="tbl" id="oq-tbl"></table></div>`, null, {
+    wide: 'xl', focus: 'oq-kw', onOpen: () => {
+      const nr = $('oq-nr'); if (nr) nr.onclick = () => noReceiptModal();
+      const run = async () => {
+        const kw = $('oq-kw').value.trim();
+        const dn = new Date(); const today = dn.getFullYear() + '-' + String(dn.getMonth() + 1).padStart(2, '0') + '-' + String(dn.getDate()).padStart(2, '0');
+        if (/^[SRX]\d{3}\w{4}\d{11,}$/.test(kw)) { orderDetailModal(kw); return; }      // 扫小票上的单号直接打开
+        const q = kw ? 'kw=' + encodeURIComponent(kw) : 'start=' + today;
+        try {
+          const d = await api('api/pos/orders?pageSize=100&' + q + '&store=' + S.ctx.store.code);
+          $('oq-tbl').innerHTML = `<tr><th>时间</th><th>单号</th><th>类型</th><th>会员</th><th class="r">应收</th><th>支付</th><th>收银员</th><th>状态</th></tr>` +
+            (d.rows.map(o => `<tr class="click" data-no="${esc(o.order_no)}"><td>${esc(o.created_at.slice(5, 16))}</td><td>${esc(o.order_no)}</td><td>${o.biz_type === 'refund' ? '<span class="pill red">退货</span>' : (o.biz_type === 'exchange' ? '<span class="pill">换货</span>' : '<span class="pill">销售</span>')}</td><td>${esc(o.member_name || '-')}</td><td class="r num">${fx(o.payable)}</td><td>${esc(o.pay_desc)}</td><td>${esc(o.cashier_name)}</td><td>${o.status === '已完成' ? '<span class="pill green">已完成</span>' : '<span class="pill red">' + esc(o.status) + '</span>'}</td></tr>`).join('') || '<tr><td colspan="8" class="tip" style="text-align:center;padding:20px">没有单据</td></tr>');
+          $('oq-tbl').querySelectorAll('tr.click').forEach(tr => tr.onclick = () => orderDetailModal(tr.dataset.no));
+        } catch (e) { $('oq-tbl').innerHTML = `<tr><td class="err">${esc(e.message)}</td></tr>`; }
+      };
+      $('oq-go').onclick = run; $('oq-kw').addEventListener('keydown', e => { if (e.key === 'Enter') run(); });
+      run();
+    }
+  });
+}
+async function orderDetailModal(no) {
+  let d; try { d = await api('api/pos/orders/' + encodeURIComponent(no)); } catch (e) { toast(e.message, 'err'); return; }
+  const o = d.order;
+  const canRefund = o.biz_type === 'sale' && o.status !== '已退货' && can('pos.refund');
+  const qsel = id => `<select data-qual="${id}" style="height:30px;border:1px solid var(--line);border-radius:6px"><option value="ok">合格</option><option value="defect">残次</option><option value="pending">待处理</option></select>`;
+  const batchTxt = it => (it.batch_alloc || []).filter(b => b.batch_no).map(b => esc(b.batch_no) + '×' + b.qty).join(' ');
+  const QN = { ok: '合格', defect: '残次', pending: '待处理' };
+  modal('单据 ' + o.order_no, `
+    <div class="tip" style="margin-bottom:8px">${esc(o.created_at)} · ${esc(o.store_name)} · 收银 ${esc(o.cashier_name)}${o.member_name ? ' · 会员 ' + esc(o.member_name) + ' ' + esc(o.member_phone || '') : ''}${o.orig_order_no ? ' · 原单 ' + esc(o.orig_order_no) : ''}${o.exchange_no ? ' · 换货单 ' + esc(o.exchange_no) : ''}${o.reprint_count ? ' · 已重打 ' + o.reprint_count + ' 次' : ''}</div>
+    <table class="tbl"><tr><th>商品</th><th class="r">数量</th><th class="r">单价</th><th class="r">实付</th>${canRefund ? '<th class="r">可退</th><th class="r">本次退</th><th>质量</th>' : '<th>质量</th>'}</tr>
+    ${o.items.map(it => `<tr><td>${esc(it.name)}${it.is_gift ? ' <span class="pill">赠</span>' : ''}<div class="tip">${esc(it.unit || '')}${it.unit_rate > 1 ? '（1' + esc(it.unit) + '=' + it.unit_rate + '）' : ''} ${batchTxt(it)}</div></td><td class="r">${it.qty}</td><td class="r">${fx(it.price)}</td><td class="r">${fx(it.amount)}</td>${canRefund ? `<td class="r">${it.refundable_qty}（${fx(it.refundable_amount)}）</td><td class="r"><input type="number" min="0" max="${it.refundable_qty}" step="1" value="0" data-line="${it.id}" style="width:64px;height:30px;border:1px solid var(--line);border-radius:6px;text-align:center"></td><td>${qsel(it.id)}</td>` : `<td>${esc(QN[it.quality] || '')}</td>`}</tr>`).join('')}</table>
+    <div style="display:flex;justify-content:space-between;margin-top:10px"><div class="tip">支付：${o.payments.map(p => esc(p.method_name) + ' ' + fx(p.amount)).join('，')}${(o.discounts || []).length ? '<br>优惠：' + o.discounts.map(x => esc(x.source_name || x.kind) + ' ' + fx(x.amount) + (x.auth_user ? '（授权 ' + esc(x.auth_user) + '）' : '')).join('，') : ''}</div><b>应收 ${money(o.payable)}</b></div>
+    ${o.refunds.length ? `<div class="tip" style="margin-top:8px">退货记录：${o.refunds.map(r => esc(r.order_no) + ' ' + fx(r.payable)).join('；')}</div>` : ''}
+    ${canRefund ? `<div class="field" style="margin-top:12px"><label>退货原因</label><select id="rf-reason"><option>顾客退货</option><option>质量问题</option><option>临期/过期</option><option>收银错误</option><option>其他</option></select><button class="btn sm line" id="rf-all">全部退</button></div>
+      <div class="tip">退款按原支付方式原路退回（储值→微信→支付宝→银行卡→其他→现金）；残次/待处理商品不进可售库存。</div><div class="err" id="rf-err"></div>` : ''}`,
+    canRefund ? async () => {
+      const items = [...document.querySelectorAll('[data-line]')].map(i => ({ line_id: +i.dataset.line, qty: parseFloat(i.value) || 0,
+        quality: (document.querySelector(`[data-qual="${i.dataset.line}"]`) || {}).value || 'ok' })).filter(x => x.qty > 0);
+      if (!items.length) { $('rf-err').textContent = '请填写退货数量'; return; }
+      try {
+        const r = await withAuth('api/pos/refund', { order_no: o.order_no, items, reason: $('rf-reason').value, client_id: uid(), terminal_no: S.terminal }, '退货');
+        closeModal(); closeModal();
+        toast(`退货成功，退款 ${fx(r.refund_amount)}（${r.payments.map(p => p.name + fx(p.amount)).join('，')}）`, 'ok');
+        printReceipt(r.order, false, true);
+      } catch (e) { $('rf-err').textContent = e.message; }
+    } : null, { wide: 'wide', okText: '确认退货', extra: [{ text: '重打小票', fn: () => reprintOrder(o) }].concat(o.biz_type === 'sale' && o.status !== '已退货' && can('pos.exchange') ? [{ text: '换货', fn: () => exchangeModal(o) }] : []), onOpen: () => {
+      const all = $('rf-all'); if (all) all.onclick = () => document.querySelectorAll('[data-line]').forEach(i => i.value = i.max);
+    } });
+}
+/* 换货（POS-605）：选换回的行 + 扫换出的商品，差价补收或原路退回 */
+function exchangeModal(o) {
+  const lines = o.items.filter(it => it.refundable_qty > 0);
+  modal('换货 · 原单 ' + o.order_no, `
+    <table class="tbl"><tr><th>换回商品</th><th class="r">可换</th><th class="r">数量</th></tr>${lines.map(it => `<tr><td>${esc(it.name)}</td><td class="r">${it.refundable_qty}</td><td class="r"><input type="number" min="0" max="${it.refundable_qty}" value="0" data-xl="${it.id}" style="width:64px;height:30px;border:1px solid var(--line);border-radius:6px;text-align:center"></td></tr>`).join('')}</table>
+    <div class="field" style="margin-top:10px"><label>换出商品</label><textarea id="xn" rows="3" style="flex:1;border:1px solid var(--line);border-radius:6px;padding:6px" placeholder="每行一个：条码 或 数量*条码"></textarea></div>
+    <div class="frow"><div class="field"><label>补差方式</label><select id="xm">${S.ctx.pay_methods.filter(m => m.code !== 'stored' && m.code !== 'other').map(m => `<option value="${m.code}">${esc(m.name)}</option>`).join('')}</select></div>
+    <div class="field"><label>补收金额</label><input id="xa" type="number" step="0.01" min="0" value="0"></div></div>
+    <div class="tip">换出比换回贵：填补收金额（现金可多收找零）；更便宜：差价自动原路退回，补收填 0。</div><div class="err" id="x-err"></div>`,
+    async () => {
+      const back = [...document.querySelectorAll('[data-xl]')].map(i => ({ line_id: +i.dataset.xl, qty: parseFloat(i.value) || 0 })).filter(x => x.qty > 0);
+      const nw = $('xn').value.split(/\n/).map(s => s.trim()).filter(Boolean).map(s => { const m = s.match(/^(\d+)\*(.+)$/); return m ? { code: m[2].trim(), qty: +m[1] } : { code: s, qty: 1 }; });
+      if (!back.length || !nw.length) { $('x-err').textContent = '请选择换回数量并填写换出商品'; return; }
+      const amt = parseFloat($('xa').value) || 0;
+      try {
+        const r = await withAuth('api/pos/exchange', { order_no: o.order_no, back_items: back, new_items: nw, payments: amt > 0 ? [{ method: $('xm').value, amount: amt }] : [], client_id: uid(), terminal_no: S.terminal }, '换货');
+        while (S.modalStack.length) closeModal();
+        toast(`换货完成：换回 ${fx(r.back_amount)}，换出 ${fx(r.new_amount)}，${r.diff >= 0 ? '补收 ' + fx(r.diff) + (r.change ? '，找零 ' + fx(r.change) : '') : '退回 ' + fx(-r.diff)}`, 'ok');
+        if (r.sale_order) printReceipt(r.sale_order, false, true);
+      } catch (e) { $('x-err').textContent = e.message; }
+    }, { wide: 'wide', okText: '确认换货' });
+}
+/* 无单退货（POS-604）：默认需店长授权，商户可在参数里禁用 */
+function noReceiptModal() {
+  modal('无单退货', `<div class="field"><label>商品条码</label><input id="nr-code"></div>
+    <div class="frow"><div class="field"><label>数量</label><input id="nr-qty" type="number" min="1" value="1"></div><div class="field"><label>退货单价</label><input id="nr-price" type="number" step="0.01" min="0"></div></div>
+    <div class="frow"><div class="field"><label>质量</label><select id="nr-q"><option value="pending">待处理</option><option value="ok">合格</option><option value="defect">残次</option></select></div>
+    <div class="field"><label>退款方式</label><select id="nr-m">${S.ctx.pay_methods.filter(m => m.code !== 'other').map(m => `<option value="${m.code}">${esc(m.name)}</option>`).join('')}</select></div></div>
+    <div class="field"><label>原因*</label><input id="nr-r" maxlength="100"></div><div class="err" id="nr-err"></div>`,
+    async () => {
+      try {
+        const r = await withAuth('api/pos/refund/no-receipt', { items: [{ code: $('nr-code').value.trim(), qty: parseFloat($('nr-qty').value) || 1, price: parseFloat($('nr-price').value), quality: $('nr-q').value }],
+          refund_method: $('nr-m').value, member_code: S.member ? S.member.code : '', reason: $('nr-r').value.trim(), client_id: uid() }, '无单退货');
+        while (S.modalStack.length) closeModal();
+        toast('无单退货完成，退款 ' + fx(r.refund_amount), 'ok'); printReceipt(r.order, false, true);
+      } catch (e) { $('nr-err').textContent = e.message; }
+    }, { okText: '确认退货', focus: 'nr-code' });
+}
+async function reprintOrder(o) {
+  if (!o) { toast('没有可重打的单据', 'err'); return; }
+  try { const d = await api('api/pos/orders/' + encodeURIComponent(o.order_no) + '/reprint', { body: { terminal_no: S.terminal } }); printReceipt(d.order, true); toast('已重打（小票标记「重打」）', 'ok'); }
+  catch (e) { toast(e.message, 'err'); }
+}
+
+/* ---------------- 开班 / 交班 ---------------- */
+function openShiftModal() {
+  modal('开班', `<div class="tip" style="margin-bottom:10px">${esc(S.ctx.store.name)} · ${esc(S.ctx.name)} · 机号 ${esc(S.terminal)}</div>
+    <div class="field"><label>备用金</label><input id="os-cash" type="number" step="0.01" min="0" value="0"></div><div class="err" id="os-err"></div>`,
+    async () => {
+      try { const d = await api('api/pos/shift/open', { body: { opening_cash: parseFloat($('os-cash').value) || 0, terminal_no: S.terminal } }); S.ctx.shift = d.shift; renderShift(); closeModal(); toast('开班成功', 'ok'); }
+      catch (e) { $('os-err').textContent = e.message; }
+    }, { okText: '开班', focus: 'os-cash', noClose: true });
+}
+async function shiftModal() {
+  let d; try { d = await api('api/pos/shift/current'); } catch (e) { toast(e.message, 'err'); return; }
+  if (!d.shift) { openShiftModal(); return; }
+  const s = d.summary;
+  const moves = d.cash_moves || [];
+  const extra = [{ text: '现金收支（F11）', fn: () => { closeModal(); cashMoveModal(); } }];
+  if (can('pos.shift.force') || can('pos.reprint')) extra.push({ text: '本店班次', fn: () => { closeModal(); shiftsModal(); } });
+  modal('交班 · 班次 #' + d.shift.id, `
+    <div class="tip" style="margin-bottom:10px">开班 ${esc(d.shift.open_time)} · 机号 ${esc(d.shift.terminal_no || '-')} · 备用金 ${fx(s.opening_cash)}</div>
+    <table class="tbl"><tr><th>项目</th><th class="r">笔数</th><th class="r">金额</th></tr>
+      <tr><td>销售</td><td class="r">${s.sale_count}</td><td class="r">${fx(s.sale_amount)}</td></tr>
+      <tr><td>退货</td><td class="r">${s.refund_count}</td><td class="r">${fx(s.refund_amount)}</td></tr>
+      ${s.exchange_count ? `<tr><td>换货</td><td class="r">${s.exchange_count}</td><td class="r">-</td></tr>` : ''}
+      <tr><td>储值充值</td><td class="r">${s.recharge_count}</td><td class="r">${fx(s.recharge_amount)}</td></tr>
+      ${s.by_method.map(m => `<tr><td>&nbsp;&nbsp;${esc(m.name)}</td><td class="r">${m.count}</td><td class="r">${fx(m.amount)}</td></tr>`).join('')}
+      <tr><td>实收合计（不含换货抵扣）</td><td></td><td class="r">${fx(s.net)}</td></tr>
+      <tr><td>现金收入 / 支出</td><td class="r">${moves.length}</td><td class="r">+${fx(s.cash_move_in)} / -${fx(s.cash_move_out)}</td></tr>
+      <tr><td><b>应有现金</b><div class="tip">${esc(s.formula || '')}</div></td><td></td><td class="r"><b>${fx(s.expected_cash)}</b></td></tr></table>
+    <div class="field" style="margin-top:12px"><label>实点现金</label><input id="cs-cash" type="number" step="0.01" value="${fx(s.expected_cash)}"></div>
+    <div class="tip" id="cs-diff"></div><div class="err" id="cs-err"></div>`,
+    async () => {
+      try {
+        const r = await api('api/pos/shift/close', { body: { counted_cash: parseFloat($('cs-cash').value) || 0, client_id: S.closeId || (S.closeId = uid()) } });
+        S.closeId = null;
+        closeModal(); printShift(r.shift, r.summary); S.ctx.shift = null; renderShift(); toast('交班完成', 'ok');
+        setTimeout(openShiftModal, 400);
+      } catch (e) { $('cs-err').textContent = e.message; }
+    }, { okText: '确认交班并打印', focus: 'cs-cash', wide: 'wide', extra, onOpen: () => {
+      const f = () => { const v = parseFloat($('cs-cash').value) || 0; const df = Math.round((v - s.expected_cash) * 100) / 100; $('cs-diff').textContent = df === 0 ? '账实相符' : (df > 0 ? '长款 ' : '短款 ') + fx(Math.abs(df)); };
+      $('cs-cash').addEventListener('input', f); f();
+    } });
+}
+/* 现金收支（POS-003）：原因必填；支出超本人额度需店长授权或审批 */
+function cashMoveModal() {
+  if (!S.ctx.shift) { openShiftModal(); return; }
+  if (!can('pos.cash_move')) { toast('没有现金收支权限', 'err'); return; }
+  modal('现金收支', `<div class="frow"><div class="field"><label>类型</label><select id="cm-d"><option value="out">支出</option><option value="in">收入</option></select></div>
+    <div class="field"><label>金额</label><input id="cm-a" type="number" step="0.01" min="0.01"></div></div>
+    <div class="field"><label>原因*</label><input id="cm-r" maxlength="100" placeholder="如：购买打印纸 / 补充零钱"></div><div class="err" id="cm-err"></div>`,
+    async () => {
+      try {
+        const r = await withAuth('api/pos/cash-moves', { direction: $('cm-d').value, amount: parseFloat($('cm-a').value), reason: $('cm-r').value.trim(), client_id: S.cmId || (S.cmId = uid()) }, '现金支出');
+        S.cmId = null; closeModal(); toast(`已登记现金${r.direction === 'in' ? '收入' : '支出'} ${fx(r.amount)}（${r.cm_no}）`, 'ok');
+      } catch (e) { $('cm-err').textContent = e.message; }
+    }, { okText: '登记', focus: 'cm-a' });
+}
+/* 本店班次：店长强制交班（原因必填、审计）、补打班报（标记重打） */
+async function shiftsModal() {
+  let d; try { d = await api('api/pos/shifts'); } catch (e) { toast(e.message, 'err'); return; }
+  modal('本店班次', `<div style="max-height:56vh;overflow:auto"><table class="tbl"><tr><th>班次</th><th>收银员</th><th>机号</th><th>开班</th><th>交班</th><th class="r">差额</th><th></th></tr>
+    ${d.rows.map(r => `<tr><td>#${r.id}</td><td>${esc(r.cashier_name || r.cashier_user)}</td><td>${esc(r.terminal_no || '-')}</td><td>${esc((r.open_time || '').slice(5, 16))}</td><td>${r.status === 'open' ? '<span class="pill red">未交班</span>' : esc((r.close_time || '').slice(5, 16)) + (r.forced ? ' <span class="pill red">强制</span>' : '')}</td><td class="r">${r.diff == null ? '-' : fx(r.diff)}</td>
+      <td class="r">${r.status === 'open' && can('pos.shift.force') ? `<button class="btn sm line" data-force="${r.id}">强制交班</button>` : ''}${r.status === 'closed' && can('pos.reprint') ? `<button class="btn sm line" data-rp="${r.id}">补打</button>` : ''}</td></tr>`).join('')}</table></div>`, null, {
+    wide: 'xl', onOpen: el => {
+      el.querySelectorAll('[data-force]').forEach(b => b.onclick = async () => {
+        const reason = prompt('强制交班原因（必填，记入审计）', ''); if (!reason) return;
+        const cnt = prompt('实点现金（不清点可留空）', '');
+        try { await api('api/pos/shift/force-close', { body: { shift_id: +b.dataset.force, reason, counted_cash: cnt === '' || cnt == null ? null : parseFloat(cnt) } }); toast('已强制交班', 'ok'); closeModal(); shiftsModal(); }
+        catch (e) { toast(e.message, 'err'); }
+      });
+      el.querySelectorAll('[data-rp]').forEach(b => b.onclick = async () => {
+        try { const r = await api('api/pos/shift/' + b.dataset.rp + '/reprint', { body: {} }); printShift(r.shift, r.shift.summary || {}, true); toast('已补打（标记重打）', 'ok'); }
+        catch (e) { toast(e.message, 'err'); }
+      });
+    } });
+}
+
+/* ---------------- 设置 ---------------- */
+function settingsModal() {
+  modal('本机设置 / 设备检测', `<div class="field"><label>收银机号</label><input id="st-term" value="${esc(S.terminal)}"></div>
+    <div class="field"><label>小票宽度</label><select id="st-w"><option value="58">58mm</option><option value="80">80mm</option></select></div>
+    <div class="field"><label>自动打印</label><select id="st-ap"><option value="1">结算后自动打印小票</option><option value="0">不自动打印</option></select></div>
+    <div class="tip">机号已开班时不能改（先交班）。建议浏览器默认打印机设为小票机、边距「无」；Chrome 加 --kiosk-printing 可免确认静默打印；钱箱接小票机时在打印驱动里开启「打印前开钱箱」。</div>
+    <h4 style="margin:14px 0 6px">设备检测（结果会记录，便于实施交付）</h4>
+    <div class="frow"><div class="field"><label>设备</label><select id="dv-d"><option value="printer">小票打印机</option><option value="cash_drawer">钱箱</option><option value="scanner">扫码枪</option><option value="customer_display">客显</option></select></div>
+    <div class="field"><label>型号</label><input id="dv-m" placeholder="如 XP-58IIH"></div></div>
+    <div class="frow"><div class="field"><label>驱动</label><input id="dv-v" placeholder="驱动名称/版本"></div><div class="field"><label>测试</label><input id="dv-t" placeholder="扫码枪：在这里扫一下"></div></div>
+    <div><button class="btn sm line" id="dv-run">执行测试</button> <button class="btn sm pri" id="dv-ok">记录：正常</button> <button class="btn sm line" id="dv-bad">记录：异常</button></div>
+    <div class="tip" id="dv-log"></div>`,
+    () => {
+      const t = $('st-term').value.trim() || S.terminal;
+      if (t !== S.terminal && S.ctx.shift) { toast('当前班次绑定机号 ' + S.terminal + '，请先交班再改', 'err'); return; }
+      S.terminal = t; localStorage.setItem('pos_terminal', S.terminal); $('t-term').textContent = S.terminal;
+      localStorage.setItem('pos_rw', $('st-w').value); localStorage.setItem('pos_autoprint', $('st-ap').value); closeModal();
+    }, { wide: 'wide', onOpen: () => {
+      $('st-w').value = localStorage.getItem('pos_rw') || String(S.ctx.config.receipt_width || 58); $('st-ap').value = localStorage.getItem('pos_autoprint') || '1';
+      $('dv-run').onclick = () => {
+        const dv = $('dv-d').value;
+        if (dv === 'printer' || dv === 'cash_drawer') printHtml(`<div class="c t">打印测试</div><div class="c">${esc(S.ctx.store.name)} · ${esc(S.terminal)}</div><hr><div>如果你看到这张小票，打印机正常。</div><div>${esc(new Date().toLocaleString('zh-CN'))}</div><div style="height:8mm"></div>`);
+        else if (dv === 'customer_display') { act('display'); setTimeout(() => custShow({ type: 'test' }), 800); }
+        else { $('dv-t').focus(); }
+        $('dv-log').textContent = dv === 'scanner' ? '请用扫码枪扫任意条码，出现在「测试」框里即正常' : '已发送测试，请观察设备后记录结果';
+      };
+      const rec = async ok => {
+        try {
+          await api('api/pos/terminals/check', { body: { terminal_no: S.terminal, device: $('dv-d').value, model: $('dv-m').value, driver: $('dv-v').value, result: ok ? 'ok' : 'fail', detail: $('dv-t').value } });
+          $('dv-log').textContent = '已记录 ' + new Date().toLocaleTimeString('zh-CN');
+        } catch (e) { $('dv-log').textContent = e.message; }
+      };
+      $('dv-ok').onclick = () => rec(true); $('dv-bad').onclick = () => rec(false);
+    } });
+}
+/* 客显页（副屏全屏）：只显示商品、合计、找零，不显示会员隐私 */
+function customerDisplay() {
+  document.body.innerHTML = `<div id="cd" style="height:100vh;display:flex;flex-direction:column;background:#0f172a;color:#fff;font-family:'Microsoft YaHei',sans-serif">
+    <div style="padding:18px 28px;font-size:26px;font-weight:700">欢迎光临</div>
+    <div id="cd-items" style="flex:1;overflow:hidden;padding:0 28px;font-size:22px"></div>
+    <div id="cd-total" style="padding:24px 28px;font-size:44px;font-weight:800;text-align:right;background:#1e293b"></div></div>`;
+  const f = n => Number(n || 0).toFixed(2);
+  if (!CD) { $('cd-items').textContent = '浏览器不支持客显（需 Chrome/Edge）'; return; }
+  CD.onmessage = ev => {
+    const m = ev.data || {};
+    if (m.type === 'cart') {
+      $('cd-items').innerHTML = (m.items || []).slice(-8).map(i => `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #334155"><span>${esc(i.name)} × ${i.qty}${esc(i.unit || '')}</span><span>¥${f(i.amount)}</span></div>`).join('');
+      $('cd-total').innerHTML = (m.discount > 0 ? `<div style="font-size:22px;color:#93c5fd">已优惠 ¥${f(m.discount)}</div>` : '') + '应付 ¥' + f(m.payable);
+    } else if (m.type === 'done') {
+      $('cd-items').innerHTML = '<div style="font-size:34px;text-align:center;margin-top:60px">谢谢惠顾！</div>';
+      $('cd-total').innerHTML = `实收 ¥${f(m.paid)}　找零 ¥${f(m.change)}`;
+    } else if (m.type === 'test') { $('cd-items').innerHTML = '<div style="font-size:34px;text-align:center;margin-top:60px">客显测试正常</div>'; }
+  };
+}
+
+/* ---------------- 打印 ---------------- */
+function docFor(inner) {
+  const w = localStorage.getItem('pos_rw') || String((S.ctx && S.ctx.config.receipt_width) || 58);
+  const doc = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+    @page{size:${w}mm auto;margin:0} body{width:${w - 6}mm;margin:2mm 3mm;font-family:"SimHei","Microsoft YaHei",monospace;font-size:${w == 80 ? 12.5 : 11}px;color:#000}
+    .c{text-align:center} .t{font-size:1.35em;font-weight:bold} hr{border:0;border-top:1px dashed #000;margin:4px 0}
+    table{width:100%;border-collapse:collapse} td{vertical-align:top;padding:1px 0} .r{text-align:right} .b{font-weight:bold} .big{font-size:1.25em;font-weight:bold}
+  </style></head><body>${inner}</body></html>`;
+  return doc;
+}
+function printHtml(inner, done) {
+  const f = $('print-frame'); f.srcdoc = docFor(inner);
+  f.onload = () => { let ok = true; try { f.contentWindow.focus(); f.contentWindow.print(); } catch (e) { ok = false; } if (done) done(ok); };
+}
+function previewHtml(inner) {
+  const w = localStorage.getItem('pos_rw') || String((S.ctx && S.ctx.config.receipt_width) || 58);
+  modal('小票预览（' + w + 'mm）', `<div style="background:#eef0f4;padding:10px;display:flex;justify-content:center"><iframe id="pv-frame" title="预览" style="width:${w == 80 ? 330 : 250}px;height:460px;border:1px solid #ccd;background:#fff" srcdoc="${esc(docFor(inner))}"></iframe></div>`,
+    () => { closeModal(); printHtml(inner); }, { okText: '打印', wide: '' });
+}
+function maskPhone(p) { return p && p.length === 11 ? p.slice(0, 3) + '****' + p.slice(7) : (p || ''); }
+function printReceipt(o, reprint, log) {
+  if (!o) { toast('没有可打印的单据', 'err'); return; }
+  const copies = Math.max(1, Math.min(3, +((S.ctx.print_template || {}).copies || 1)));
+  let html = receiptInner(o, reprint); for (let i = 1; i < copies; i++) html += '<div style="page-break-before:always"></div>' + receiptInner(o, reprint);
+  printHtml(html, ok => {
+    if (!log) return;
+    // 打印结果只做记录：失败不影响已完成的订单（AC-006），提示收银员按 F10 重打
+    api('api/pos/orders/' + encodeURIComponent(o.order_no) + '/print', { body: { result: ok ? 'sent' : 'fail', terminal_no: S.terminal } }).catch(() => {});
+    if (!ok) toast('小票打印失败（订单已完成），检查打印机后按 F10 重打', 'err');
+  });
+}
+function previewReceipt(o) { if (!o) { toast('没有可预览的单据', 'err'); return; } previewHtml(receiptInner(o)); }
+function receiptInner(o, reprint) {
+  const cfg = S.ctx.config; const refund = o.biz_type === 'refund';
+  const tpl = (S.ctx.print_template && S.ctx.print_template.content) || {};
+  const items = o.items.map(it => `<tr><td colspan="3">${esc(it.name)}${it.is_gift ? '（赠）' : ''}${it.spec ? ' ' + esc(it.spec) : ''}</td></tr><tr><td>${Math.abs(it.qty)}${esc(it.unit || '')} × ${fx(it.price)}</td><td></td><td class="r">${fx(it.amount)}</td></tr>${(it.batch_alloc || []).filter(b => b.batch_no).length ? `<tr><td colspan="3" style="font-size:.85em">批号 ${(it.batch_alloc || []).filter(b => b.batch_no).map(b => esc(b.batch_no) + (b.expiry_date ? '(至' + esc(b.expiry_date) + ')' : '')).join(' ')}</td></tr>` : ''}`).join('');
+  const dis = [];
+  if (o.order_discount) dis.push(['整单优惠', -o.order_discount]);
+  if (o.coupon_amount) dis.push(['优惠券', -o.coupon_amount]);
+  if (o.points_amount) dis.push(['积分抵扣(' + o.points_used + '分)', -o.points_amount]);
+  if (o.round_off) dis.push(['抹零', -o.round_off]);
+  const paid = o.payments.reduce((a, p) => a + p.amount, 0);
+  return (`<div class="c t">${esc(tpl.title || cfg.receipt_title || '萌贝母婴连锁')}</div><div class="c">${esc(o.store_name)}</div>
+    <div class="c b">${refund ? '退 货 单' : '销 售 小 票'}${reprint ? '（重打）' : ''}</div><hr>
+    <div>单号：${esc(o.order_no)}</div>${o.orig_order_no ? `<div>原单：${esc(o.orig_order_no)}</div>` : ''}
+    <div>时间：${esc(o.created_at)}</div><div>收银：${esc(o.cashier_name)}  机号：${esc(o.terminal_no || '')}</div>
+    ${o.guide_name ? `<div>导购：${esc(o.guide_name)}</div>` : ''}
+    ${o.member_name ? `<div>会员：${esc(o.member_name)} ${esc(maskPhone(o.member_phone))}</div>` : ''}<hr>
+    <table>${items}</table><hr>
+    <table><tr><td>件数</td><td class="r">${Math.abs(o.item_qty)}</td></tr>
+    ${!refund ? `<tr><td>原价合计</td><td class="r">${fx(o.retail_total)}</td></tr>` : ''}
+    ${dis.map(x => `<tr><td>${x[0]}</td><td class="r">${fx(x[1])}</td></tr>`).join('')}
+    <tr><td class="big">${refund ? '退款' : '应收'}</td><td class="r big">${fx(Math.abs(o.payable))}</td></tr>
+    ${o.payments.map(p => `<tr><td>${esc(p.method_name)}</td><td class="r">${fx(Math.abs(p.method === 'cash' && o.change_amount ? p.amount + o.change_amount : p.amount))}</td></tr>`).join('')}
+    ${o.change_amount ? `<tr><td>找零</td><td class="r">${fx(o.change_amount)}</td></tr>` : ''}
+    ${!refund && o.discount_total > 0 ? `<tr><td class="b">本单节省</td><td class="r b">${fx(o.discount_total)}</td></tr>` : ''}
+    ${o.points_earned ? `<tr><td>${refund ? '扣回积分' : '本单积分'}</td><td class="r">${o.points_earned > 0 ? '+' : ''}${o.points_earned}</td></tr>` : ''}</table><hr>
+    ${refund && o.refund_reason ? `<div>退货原因：${esc(o.refund_reason)}</div>` : ''}
+    <div class="c" style="white-space:pre-line">${esc(tpl.footer || cfg.receipt_footer || '')}</div>${reprint ? `<div class="c">重打 ${esc(new Date().toLocaleString('zh-CN'))}</div>` : ''}<div style="height:8mm"></div>`);
+}
+function printRecharge(d) {
+  const m = d.member;
+  printHtml(`<div class="c t">${esc(S.ctx.config.receipt_title)}</div><div class="c">${esc(S.ctx.store.name)}</div><div class="c b">储 值 充 值 单</div><hr>
+    <div>流水：${esc(d.txn_no)}</div><div>时间：${new Date().toLocaleString('zh-CN')}</div><div>会员：${esc(m.name)} ${esc(maskPhone(m.phone))}</div><hr>
+    <table><tr><td>充值金额</td><td class="r">${fx(d.amount)}</td></tr><tr><td>赠送金额</td><td class="r">${fx(d.gift)}</td></tr><tr><td class="big">当前余额</td><td class="r big">${fx(d.balance)}</td></tr>
+    ${d.points ? `<tr><td>赠送积分</td><td class="r">+${d.points}</td></tr>` : ''}</table><hr><div>收银：${esc(S.ctx.name)}</div><div>顾客签字：</div><div style="height:12mm"></div>`);
+}
+function printShift(sh, s, reprint) {
+  s = s || {}; s.by_method = s.by_method || [];
+  printHtml(`<div class="c t">交 班 单${reprint ? '（重打）' : ''}</div>${sh.forced ? '<div class="c b">店长强制交班：' + esc(sh.force_reason || '') + '</div>' : ''}<div class="c">${esc(sh.store_name)}</div><hr>
+    <div>收银员：${esc(sh.cashier_name)}  机号：${esc(sh.terminal_no || '')}</div><div>开班：${esc(sh.open_time)}</div><div>交班：${esc(sh.close_time)}</div><hr>
+    <table><tr><td>销售 ${s.sale_count} 笔</td><td class="r">${fx(s.sale_amount)}</td></tr><tr><td>退货 ${s.refund_count} 笔</td><td class="r">${fx(s.refund_amount)}</td></tr>
+    <tr><td>储值充值 ${s.recharge_count} 笔</td><td class="r">${fx(s.recharge_amount)}</td></tr>
+    <tr><td>现金收入</td><td class="r">${fx(s.cash_move_in)}</td></tr><tr><td>现金支出</td><td class="r">${fx(s.cash_move_out)}</td></tr></table><hr>
+    <table>${s.by_method.map(m => `<tr><td>${esc(m.name)}</td><td class="r">${fx(m.amount)}</td></tr>`).join('')}</table><hr>
+    <table><tr><td>备用金</td><td class="r">${fx(sh.opening_cash)}</td></tr><tr><td>应有现金</td><td class="r">${fx(sh.expected_cash)}</td></tr>
+    <tr><td>实点现金</td><td class="r">${fx(sh.counted_cash)}</td></tr><tr><td class="b">差额</td><td class="r b">${fx(sh.diff)}</td></tr></table><hr>
+    <div>收银员签字：</div><div style="height:6mm"></div><div>店长签字：</div><div style="height:12mm"></div>`);
+}
+
+/* ---------------- 通用弹窗 ---------------- */
+function modal(title, html, onOk, opt) {
+  opt = opt || {};
+  const root = document.createElement('div'); root.className = 'mask';
+  const extra = (opt.extra || []).map((x, i) => `<button class="btn line" data-ex="${i}">${esc(x.text)}</button>`).join('');
+  root.innerHTML = `<div class="modal ${opt.wide || ''}"><div class="mh"><h3>${esc(title)}</h3>${opt.noClose ? '' : '<button class="x" data-close>×</button>'}</div><div class="mb">${html}</div>
+    <div class="mf">${extra}${opt.noClose ? '' : '<button class="btn line" data-close>取消（Esc）</button>'}${onOk ? `<button class="btn pri" data-ok>${esc(opt.okText || '确定')}</button>` : ''}</div></div>`;
+  $('modal-root').appendChild(root);
+  const item = { root, onOk, opt };
+  S.modalStack.push(item);
+  root.querySelectorAll('[data-close]').forEach(b => b.onclick = () => closeModal());
+  const ok = root.querySelector('[data-ok]'); if (ok) ok.onclick = () => onOk();
+  root.querySelectorAll('[data-ex]').forEach(b => b.onclick = () => opt.extra[+b.dataset.ex].fn());
+  if (opt.onOpen) opt.onOpen(root);
+  setTimeout(() => { const f = opt.focus && $(opt.focus); if (f) { f.focus(); if (f.select) f.select(); } else if (ok) ok.focus(); }, 30);
+  return root;
+}
+function closeModal() {
+  const it = S.modalStack.pop(); if (!it) return;
+  it.root.remove(); if (it.opt.onClose) it.opt.onClose();
+  focusScan();
+}
+
+/* ---------------- 键盘 ---------------- */
+document.addEventListener('keydown', e => {
+  if (!$('login').classList.contains('hidden')) return;
+  const top = S.modalStack[S.modalStack.length - 1];
+  if (top) {
+    if (e.key === 'Escape' && !top.opt.noClose) { e.preventDefault(); closeModal(); }
+    else if (e.key === 'Enter' && top.onOk && !(e.target.tagName === 'SELECT') && !(e.target.id === 'gs-kw') && !(e.target.id === 'oq-kw') && !(e.target.id === 'nm-phone' && false)) { e.preventDefault(); top.onOk(); }
+    else if (top.root.querySelector('#pm') && /^[1-9]$/.test(e.key) && e.target.id !== 'pay-amt') { }
+    else if (top.root.querySelector('#pm') && /^F[1-5]$/.test(e.key)) { e.preventDefault(); const b = top.root.querySelectorAll('#pm button')[+e.key.slice(1) - 1]; if (b && !b.disabled) b.click(); }
+    return;
+  }
+  const map = { F1: 'member', F2: 'search', F3: 'hold', F4: 'held', F5: 'od', F6: 'chprice', F7: 'orders', F8: 'shift', F9: 'recharge', F10: 'reprint', F11: 'cash', F12: 'pay' };
+  if (map[e.key]) { e.preventDefault(); act(map[e.key]); return; }
+  const inScan = e.target.id === 'scan';
+  const typing = ['INPUT', 'SELECT', 'TEXTAREA'].includes(e.target.tagName) && !inScan;
+  if (e.key === 'Escape') { e.preventDefault(); if (inScan && $('scan').value) $('scan').value = ''; else if (S.cart.length) act('clear'); return; }
+  if (typing) return;
+  if (e.key === 'ArrowDown' && S.cart.length) { e.preventDefault(); S.sel = Math.min(S.cart.length - 1, S.sel + 1); renderCart(); }
+  else if (e.key === 'ArrowUp' && S.cart.length) { e.preventDefault(); S.sel = Math.max(0, S.sel - 1); renderCart(); }
+  else if ((e.key === '+' || e.key === '=') && S.sel >= 0 && !$('scan').value) { e.preventDefault(); setQty(S.sel, S.cart[S.sel].qty + 1); }
+  else if (e.key === '-' && S.sel >= 0 && !$('scan').value) { e.preventDefault(); setQty(S.sel, S.cart[S.sel].qty - 1); }
+  else if (e.key === 'Delete' && S.sel >= 0) { e.preventDefault(); S.cart.splice(S.sel, 1); S.sel = Math.min(S.sel, S.cart.length - 1); renderCart(); reprice(); }
+  else if (!inScan && e.key.length === 1 && !e.ctrlKey && !e.altKey) { $('scan').focus(); }
+});
+$('scan').addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    e.preventDefault(); const v = $('scan').value.trim(); $('scan').value = '';
+    if (!v) { if (S.cart.length) act('pay'); return; }
+    if (/^\d{11}$/.test(v) && v.startsWith('1') && !S.member && false) { findMember(v); return; }
+    scan(v);
+  }
+});
+document.body.addEventListener('click', e => { const b = e.target.closest('[data-act]'); if (b) act(b.dataset.act); });
+function act(a) {
+  switch (a) {
+    case 'member': if (S.member) clearMember(); $('m-kw').focus(); break;
+    case 'findmember': findMember(); break;
+    case 'clearmember': clearMember(); $('m-kw').focus(); break;
+    case 'newmember': newMemberModal(''); break;
+    case 'search': openSearch(''); break;
+    case 'hold': holdOrder(); break;
+    case 'held': heldModal(); break;
+    case 'od': odModal(); break;
+    case 'clearod': $('od-val').value = ''; S.od = null; reprice(); break;
+    case 'maxpts': if (S.member && S.priced) { const p2y = S.ctx.config.points_to_yuan || 100; const cap = Math.floor((S.priced.payable + S.priced.points_amount) * (S.ctx.config.points_max_ratio || .5)); $('pts').value = Math.min(S.member.points - S.member.points % p2y, cap * p2y); reprice(); } break;
+    case 'chprice': chPriceModal(); break;
+    case 'orders': ordersModal(); break;
+    case 'shift': shiftModal(); break;
+    case 'recharge': rechargeModal(); break;
+    case 'reprint': if (S.lastOrder) reprintOrder(S.lastOrder); else ordersModal(); break;
+    case 'cash': cashMoveModal(); break;
+    case 'batch': batchModal(); break;
+    case 'display': window.open(location.pathname + '?display=1', 'pos_display', 'width=1024,height=600'); break;
+    case 'settings': settingsModal(); break;
+    case 'pay': payModal(); break;
+    case 'clear': if (S.cart.length) modal('清空当前单', '<div>确定清空购物车和会员信息吗？</div>', () => { closeModal(); resetOrder(); }, { okText: '清空' }); break;
+    case 'logout': fetch('api/logout', { method: 'POST', credentials: 'same-origin' }).then(() => location.reload()); break;
+  }
+}
+
+/* ---------------- 断电/刷新保护：草稿 ---------------- */
+function saveDraft() { try { localStorage.setItem('pos_draft', JSON.stringify({ cart: S.cart, member: S.member ? S.member.code : '', client_id: S.clientId || null })); } catch (e) {} }
+function restoreDraft() {
+  try {
+    const d = JSON.parse(localStorage.getItem('pos_draft') || 'null');
+    if (d && d.cart && d.cart.length && !S.cart.length) {
+      S.cart = d.cart; S.sel = 0; S.clientId = d.client_id || null; renderCart(); reprice(); if (d.member) findMember(d.member);
+      toast(d.client_id ? '已恢复上次的单据：如果上次已收款，再次结算会直接调出原单，不会重复收款' : '已恢复上次未结算的单据');
+    }
+  } catch (e) {}
+}
+
+if (new URLSearchParams(location.search).get('display') === '1') customerDisplay();
+else { renderCart(); showTotals(); api('api/me').then(boot).catch(() => {}); }
+</script>
+</body>
+</html>
